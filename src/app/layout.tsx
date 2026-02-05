@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { AdSlot } from "@/components/ad-slot";
 import "./globals.css";
 
@@ -6,6 +7,8 @@ export const metadata: Metadata = {
   title: "Dittopdf",
   description: "Complete PDF tool suite for modern teams"
 };
+
+const adsenseClientId = process.env.ADSENSE_CLIENT_ID;
 
 export default function RootLayout({
   children
@@ -15,6 +18,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-surface text-slate-100">
+        {adsenseClientId && (
+          <Script
+            async
+            strategy="afterInteractive"
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
+            crossOrigin="anonymous"
+          />
+        )}
         <div className="min-h-screen flex flex-col">
           <header className="px-6 py-5 border-b border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-3">

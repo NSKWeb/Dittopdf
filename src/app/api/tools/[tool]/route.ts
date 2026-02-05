@@ -38,36 +38,58 @@ export async function POST(request: Request, { params }: { params: { tool: strin
     }
   }
 
-  const result = await processPdfTool({ tool: params.tool, files, instructions });
-  const key = `${Date.now()}-${result.filename}`;
-  const upload = await uploadFile({
-    key,
-    body: result.buffer,
-    contentType: result.contentType
-  });
+  const userRecord = authUser ? await prisma.users.findUnique({ where: { id: authUser.id } }) : null;
+  const now = new Date();
+  const shouldReset = userRecord ? now.getTime() - userRecord.lastResetDate.getTime() >= 24 * 60 * 60 * 1000 : false;
+  const dailyUsage = userRecord ? (shouldReset ? 0 : userRecord.usageCount) : 0;
 
-  if (authUser) {
-    await prisma.files.create({
-      data: {
-        userId: authUser.id,
-        originalFilename: files[0].name,
-        processedFilename: result.filename,
-        fileSize: result.buffer.length,
-        toolUsed: params.tool,
-        status: "processed"
-      }
-    });
-    await prisma.usageLogs.create({
-      data: {
-        userId: authUser.id,
-        toolUsed: params.tool,
-        fileSize: result.buffer.length
-      }
-    });
+  if (userRecord?.planType === "Free" && dailyUsage >= 5) {
+    return NextResponse.json({ message: "Daily limit reached. Upgrade for unlimited use." }, { status: 403 });
   }
 
-  return NextResponse.json({
-    message: "Processing complete",
-    downloadUrl: upload.url
-  });
+  try {
+    const result = await processPdfTool({ tool: params.tool, files, instructions });
+    const key = `${Date.now()}-${result.filename}`;
+    const upload = await uploadFile({
+      key,
+      body: result.buffer,
+      contentType: result.contentType
+    });
+
+    if (authUser && userRecord) {
+      await prisma.$transaction([
+        prisma.files.create({
+          data: {
+            userId: authUser.id,
+            originalFilename: files[0].name,
+            processedFilename: result.filename,
+            fileSize: result.buffer.length,
+            toolUsed: params.tool,
+            status: "processed"
+          }
+        }),
+        prisma.usageLogs.create({
+          data: {
+            userId: authUser.id,
+            toolUsed: params.tool,
+            fileSize: result.buffer.length
+          }
+        }),
+        prisma.users.update({
+          where: { id: authUser.id },
+          data: shouldReset
+            ? { usageCount: 1, lastResetDate: now }
+            : { usageCount: { increment: 1 } }
+        })
+      ]);
+    }
+
+    return NextResponse.json({
+      message: "Processing complete",
+      downloadUrl: upload.url
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Processing failed";
+    return NextResponse.json({ message }, { status: 400 });
+  }
 }

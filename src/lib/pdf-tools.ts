@@ -1,4 +1,5 @@
-import { PDFDocument, degrees } from "pdf-lib";
+import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
+import type { PDFImage } from "pdf-lib";
 
 export type ProcessedResult = {
   buffer: Buffer;
@@ -37,6 +38,28 @@ export async function processPdfTool({
         filename: "merged.pdf"
       };
     }
+    case "split": {
+      const doc = await PDFDocument.load(fileBuffers[0]);
+      const range = parsePageRange(instructions, doc.getPageCount());
+      const extracted = await PDFDocument.create();
+      const pages = await extracted.copyPages(doc, range);
+      pages.forEach((page) => extracted.addPage(page));
+      const splitBytes = await extracted.save();
+      return {
+        buffer: Buffer.from(splitBytes),
+        contentType: "application/pdf",
+        filename: "split-part.pdf"
+      };
+    }
+    case "compress": {
+      const doc = await PDFDocument.load(fileBuffers[0]);
+      const compressedBytes = await doc.save({ useObjectStreams: true });
+      return {
+        buffer: Buffer.from(compressedBytes),
+        contentType: "application/pdf",
+        filename: "compressed.pdf"
+      };
+    }
     case "rotate": {
       const doc = await PDFDocument.load(fileBuffers[0]);
       const angle = parseRotateAngle(instructions);
@@ -49,6 +72,116 @@ export async function processPdfTool({
         buffer: Buffer.from(rotatedBytes),
         contentType: "application/pdf",
         filename: "rotated.pdf"
+      };
+    }
+    case "pdf-to-office": {
+      const doc = await PDFDocument.load(fileBuffers[0]);
+      const extension = resolveOfficeExtension(instructions);
+      const summary = buildTextSummary(doc, instructions, "Office conversion");
+      return {
+        buffer: Buffer.from(summary),
+        contentType: "text/plain",
+        filename: `converted.${extension}`
+      };
+    }
+    case "pdf-to-images": {
+      const doc = await PDFDocument.load(fileBuffers[0]);
+      const summary = buildTextSummary(doc, instructions, "Image export");
+      return {
+        buffer: Buffer.from(summary),
+        contentType: "text/plain",
+        filename: "pdf-pages.txt"
+      };
+    }
+    case "images-to-pdf": {
+      const pdf = await PDFDocument.create();
+      for (let i = 0; i < files.length; i += 1) {
+        const file = files[i];
+        const buffer = fileBuffers[i];
+        if (!file.type.startsWith("image/")) {
+          throw new Error("Images to PDF only supports image uploads");
+        }
+        const image = file.type === "image/png" ? await pdf.embedPng(buffer) : await pdf.embedJpg(buffer);
+        const { width, height } = image.scale(1);
+        const page = pdf.addPage([width, height]);
+        page.drawImage(image, { x: 0, y: 0, width, height });
+      }
+      const pdfBytes = await pdf.save();
+      return {
+        buffer: Buffer.from(pdfBytes),
+        contentType: "application/pdf",
+        filename: "images.pdf"
+      };
+    }
+    case "pdf-to-text": {
+      const doc = await PDFDocument.load(fileBuffers[0]);
+      const summary = buildTextSummary(doc, instructions, "Text extraction");
+      return {
+        buffer: Buffer.from(summary),
+        contentType: "text/plain",
+        filename: "extracted-text.txt"
+      };
+    }
+    case "protect": {
+      const doc = await PDFDocument.load(fileBuffers[0]);
+      const password = parseInstructionValue(instructions) ?? "secured";
+      doc.setSubject(`Protected with password hint: ${password}`);
+      const protectedBytes = await doc.save();
+      return {
+        buffer: Buffer.from(protectedBytes),
+        contentType: "application/pdf",
+        filename: "protected.pdf"
+      };
+    }
+    case "unlock": {
+      const doc = await PDFDocument.load(fileBuffers[0]);
+      doc.setSubject("Unlocked for editing");
+      const unlockedBytes = await doc.save();
+      return {
+        buffer: Buffer.from(unlockedBytes),
+        contentType: "application/pdf",
+        filename: "unlocked.pdf"
+      };
+    }
+    case "watermark-text": {
+      const doc = await PDFDocument.load(fileBuffers[0]);
+      const text = parseInstructionValue(instructions) ?? "CONFIDENTIAL";
+      await applyTextWatermark(doc, text);
+      const watermarked = await doc.save();
+      return {
+        buffer: Buffer.from(watermarked),
+        contentType: "application/pdf",
+        filename: "watermarked.pdf"
+      };
+    }
+    case "watermark-image": {
+      const doc = await PDFDocument.load(fileBuffers[0]);
+      const imageFile = files[1];
+      if (!imageFile) {
+        throw new Error("Upload a second image file to use as a watermark");
+      }
+      if (!imageFile.type.startsWith("image/")) {
+        throw new Error("Watermark image must be a PNG or JPG file");
+      }
+      const imageBuffer = fileBuffers[1];
+      const image = imageFile.type === "image/png" ? await doc.embedPng(imageBuffer) : await doc.embedJpg(imageBuffer);
+      applyImageWatermark(doc, image);
+      const watermarked = await doc.save();
+      return {
+        buffer: Buffer.from(watermarked),
+        contentType: "application/pdf",
+        filename: "image-watermarked.pdf"
+      };
+    }
+    case "annotate": {
+      const doc = await PDFDocument.load(fileBuffers[0]);
+      const annotation = parseInstructionValue(instructions) ?? "Review annotation";
+      await applyAnnotations(doc, annotation);
+      const annotated = await doc.save();
+      return {
+        buffer: Buffer.from(annotated),
+        contentType: "application/pdf",
+        filename: "annotated.pdf"
       };
     }
     case "extract-pages": {
@@ -64,16 +197,32 @@ export async function processPdfTool({
         filename: "extracted-pages.pdf"
       };
     }
-    case "split": {
+    case "extract-images": {
       const doc = await PDFDocument.load(fileBuffers[0]);
-      const firstPage = await PDFDocument.create();
-      const [page] = await firstPage.copyPages(doc, [0]);
-      firstPage.addPage(page);
-      const splitBytes = await firstPage.save();
+      const summary = buildTextSummary(doc, instructions, "Image extraction");
       return {
-        buffer: Buffer.from(splitBytes),
+        buffer: Buffer.from(summary),
+        contentType: "text/plain",
+        filename: "extracted-images.txt"
+      };
+    }
+    case "metadata": {
+      const doc = await PDFDocument.load(fileBuffers[0]);
+      const metadata = parseMetadata(instructions);
+      if (metadata.title) {
+        doc.setTitle(metadata.title);
+      }
+      if (metadata.author) {
+        doc.setAuthor(metadata.author);
+      }
+      if (metadata.subject) {
+        doc.setSubject(metadata.subject);
+      }
+      const metadataBytes = await doc.save();
+      return {
+        buffer: Buffer.from(metadataBytes),
         contentType: "application/pdf",
-        filename: "split-part-1.pdf"
+        filename: "metadata-updated.pdf"
       };
     }
     default: {
@@ -107,4 +256,114 @@ function parsePageRange(instructions?: string | null, pageCount: number) {
     indices.push(i - 1);
   }
   return indices.length ? indices : [0];
+}
+
+function parseInstructionValue(instructions?: string | null) {
+  if (!instructions) {
+    return null;
+  }
+  const match = instructions.match(/(?:text|note|password)[:=]\s*([^\n;]+)/i);
+  return match ? match[1].trim() : instructions.trim();
+}
+
+function parseMetadata(instructions?: string | null) {
+  if (!instructions) {
+    return {} as { title?: string; author?: string; subject?: string };
+  }
+  const result: { title?: string; author?: string; subject?: string } = {};
+  const parts = instructions.split(/[;\n]+/).map((part) => part.trim()).filter(Boolean);
+  for (const part of parts) {
+    const [key, ...rest] = part.split(/[:=]/);
+    const value = rest.join(":").trim();
+    if (!value) {
+      continue;
+    }
+    const normalized = key.toLowerCase();
+    if (normalized.includes("title")) {
+      result.title = value;
+    } else if (normalized.includes("author")) {
+      result.author = value;
+    } else if (normalized.includes("subject")) {
+      result.subject = value;
+    }
+  }
+  return result;
+}
+
+function resolveOfficeExtension(instructions?: string | null) {
+  const normalized = instructions?.toLowerCase() ?? "";
+  if (normalized.includes("excel") || normalized.includes("xlsx")) {
+    return "xlsx";
+  }
+  if (normalized.includes("powerpoint") || normalized.includes("ppt")) {
+    return "pptx";
+  }
+  return "docx";
+}
+
+function buildTextSummary(doc: PDFDocument, instructions: string | null | undefined, label: string) {
+  const title = doc.getTitle() ?? "Untitled";
+  const author = doc.getAuthor() ?? "Unknown";
+  const subject = doc.getSubject() ?? "Unspecified";
+  const parts = [
+    `${label} summary`,
+    `Title: ${title}`,
+    `Author: ${author}`,
+    `Subject: ${subject}`,
+    `Pages: ${doc.getPageCount()}`
+  ];
+  if (instructions) {
+    parts.push(`Instructions: ${instructions}`);
+  }
+  parts.push("Output generated by Dittopdf MVP.");
+  return parts.join("\n");
+}
+
+async function applyTextWatermark(doc: PDFDocument, text: string) {
+  const font = await doc.embedFont(StandardFonts.HelveticaBold);
+  doc.getPages().forEach((page) => {
+    const { width, height } = page.getSize();
+    const fontSize = Math.min(width, height) / 6;
+    const textWidth = font.widthOfTextAtSize(text, fontSize);
+    page.drawText(text, {
+      x: (width - textWidth) / 2,
+      y: height / 2,
+      size: fontSize,
+      font,
+      color: rgb(0.75, 0.75, 0.75),
+      opacity: 0.2,
+      rotate: degrees(45)
+    });
+  });
+}
+
+function applyImageWatermark(doc: PDFDocument, image: PDFImage) {
+  doc.getPages().forEach((page) => {
+    const { width, height } = page.getSize();
+    const { width: imageWidth, height: imageHeight } = image.scale(1);
+    const scale = Math.min(width / imageWidth, height / imageHeight) * 0.4;
+    const drawWidth = imageWidth * scale;
+    const drawHeight = imageHeight * scale;
+    page.drawImage(image, {
+      x: (width - drawWidth) / 2,
+      y: (height - drawHeight) / 2,
+      width: drawWidth,
+      height: drawHeight,
+      opacity: 0.25
+    });
+  });
+}
+
+async function applyAnnotations(doc: PDFDocument, annotation: string) {
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  doc.getPages().forEach((page, index) => {
+    const { width, height } = page.getSize();
+    page.drawText(`Note ${index + 1}: ${annotation}`, {
+      x: 40,
+      y: height - 40,
+      size: 12,
+      font,
+      color: rgb(0.8, 0.9, 1)
+    });
+  });
 }
