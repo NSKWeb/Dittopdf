@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  id            String      @id @default(cuid())
+  email         String      @unique
+  passwordHash  String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  usageCount    Int         @default(0)
+  lastResetDate DateTime    @default(now())
+  planType      String      @default("Free")
+  files         Files[]
+  usageLogs     UsageLogs[]
+}
+
+model Files {
+  id                String   @id @default(cuid())
+  userId            String
+  originalFilename  String
+  processedFilename String
+  fileSize          Int
+  toolUsed          String
+  status            String   @default("processed")
+  createdAt         DateTime @default(now())
+  user              Users    @relation(fields: [userId], references: [id])
+}
+
+model UsageLogs {
+  id        String   @id @default(cuid())
+  userId    String
+  toolUsed  String
+  fileSize  Int
+  timestamp DateTime @default(now())
+  user      Users    @relation(fields: [userId], references: [id])
+}
