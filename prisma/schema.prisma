@@ -1334,3 +1334,158 @@ model GlobalMarkets {
   marketShare             Float
   createdAt               DateTime            @default(now())
 }
+
+// Phase 6: Autonomous Business Operations
+model AutonomousDecisions {
+  id                String              @id @default(cuid())
+  decisionType      String
+  decisionContext   Json
+  aiAnalysis        Json
+  decisionOutcome   String
+  confidenceScore   Float
+  executedAt        DateTime            @default(now())
+  approvedBy        String?
+  createdAt         DateTime            @default(now())
+
+  @@index([decisionType])
+  @@index([executedAt])
+}
+
+model EcosystemControl {
+  id                String              @id @default(cuid())
+  platformId        String              @unique
+  platformName      String
+  controlLevel      String              @default("dominant")
+  marketPosition    String              @default("leader")
+  integrationDepth  Float               @default(0.95)
+  lockInFactor      Float               @default(0.90)
+  partnerCount      Int                 @default(0)
+  metrics           Json?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([platformId])
+  @@index([marketPosition])
+}
+
+model IndustryStandards {
+  id                String              @id @default(cuid())
+  standardId        String              @unique
+  standardName      String
+  description       String?
+  category          String
+  adoptionRate      Float               @default(0.0)
+  influenceScore    Float               @default(0.0)
+  regulatoryBody    String?
+  relatedProducts   String[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([standardId])
+  @@index([category])
+}
+
+model MarketAcquisition {
+  id                String              @id @default(cuid())
+  targetMarket      String
+  acquisitionType   String
+  strategy          Json
+  investmentAmount  Float
+  projectedROI      Float
+  actualROI         Float?
+  status            String              @default("planning")
+  competitorImpact  Json?
+  marketShareGain   Float               @default(0.0)
+  startedAt         DateTime            @default(now())
+  completedAt       DateTime?
+
+  @@index([targetMarket])
+  @@index([status])
+}
+
+model StrategicPartnerships {
+  id                String              @id @default(cuid())
+  partnerName       String
+  partnerType       String
+  partnershipLevel  String              @default("strategic")
+  contractValue     Float
+  revenueShare      Float
+  synergies         Json?
+  automationLevel   Float               @default(0.85)
+  status            String              @default("active")
+  aiManaged         Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([partnerName])
+  @@index([status])
+}
+
+model CompetitiveIntelligence {
+  id                String              @id @default(cuid())
+  competitorName    String
+  analysisType      String
+  marketSegment     String
+  intelligenceData  Json
+  threatLevel       String              @default("low")
+  opportunityScore  Float               @default(0.0)
+  actionRecommended String?
+  aiConfidence      Float               @default(0.0)
+  createdAt         DateTime            @default(now())
+
+  @@index([competitorName])
+  @@index([marketSegment])
+}
+
+model AutonomousRevenue {
+  id                String              @id @default(cuid())
+  revenueStream     String
+  optimizationType  String
+  aiModelUsed       String
+  baselineRevenue   Float
+  optimizedRevenue  Float
+  improvementPercent Float
+  pricingStrategy   Json?
+  marketConditions  Json?
+  appliedAt         DateTime            @default(now())
+
+  @@index([revenueStream])
+  @@index([appliedAt])
+}
+
+model GlobalExpansion {
+  id                String              @id @default(cuid())
+  regionCode        String
+  regionName        String
+  expansionStage    String              @default("research")
+  entryStrategy     String
+  investmentAmount  Float
+  projectedRevenue  Float
+  actualRevenue     Float?
+  marketPenetration Float               @default(0.0)
+  culturalAdaptation Json?
+  aiRecommendations Json?
+  startedAt         DateTime            @default(now())
+  launchedAt        DateTime?
+
+  @@index([regionCode])
+  @@index([expansionStage])
+}
+
+model PostIpoOperations {
+  id                String              @id @default(cuid())
+  operationType     String
+  quarter           String
+  year              Int
+  sharePrice        Float
+  marketCap         Float
+  tradingVolume     BigInt
+  shareholderMetrics Json?
+  boardDecisions    Json?
+  aiRecommendations Json?
+  autonomousActions Int                 @default(0)
+  createdAt         DateTime            @default(now())
+
+  @@index([quarter])
+  @@index([year])
+}
