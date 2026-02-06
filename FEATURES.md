@@ -32,6 +32,34 @@ Dittopdf is a production-ready PDF tool suite built with Next.js 15, featuring 1
 15. **Extract Images** - Download all embedded images from PDF
 16. **Edit Metadata** - Modify title, author, and subject metadata
 
+### ✅ Enterprise Features (Phase 2)
+
+#### Advanced PDF Tools
+17. **OCR Text Recognition** - Extract text from scanned PDFs and images using Tesseract.js
+18. **Digital Signatures** - Sign PDF documents with certificate validation support
+19. **Enhanced Export** - Export PDFs to PDF/A and PDF/X formats for archiving and printing
+20. **Page Organization** - Advanced reordering and deletion of pages within PDFs
+
+#### Batch & Queue Management
+- High-volume PDF processing using Bull and Redis
+- Background job processing for large files
+- Job status tracking and management
+
+#### Advanced PDF Editor & Form Builder
+- Full-featured editor with layer management
+- Drag-and-drop PDF form builder (text fields, checkboxes, signature areas)
+- Real-time collaboration support via Socket.io
+
+#### Developer Platform
+- Public REST API for external integrations
+- API key management system
+- Interactive Swagger documentation
+
+#### Enterprise Analytics
+- Advanced analytics dashboard with usage trends
+- Detailed audit logs and usage tracking
+- Enterprise-grade reporting tools
+
 ### ✅ User Authentication System
 - User registration with email/password
 - Secure login with JWT tokens
