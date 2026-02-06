@@ -1,10 +1,10 @@
-# Dittopdf - Enterprise PDF Platform
+# Dittopdf - Global Enterprise PDF Platform
 
-A production-ready AI-powered SaaS platform with 25+ PDF tools, enterprise features, mobile apps, and advanced automation capabilities.
+A production-ready AI-powered SaaS platform with 25+ PDF tools, enterprise features, mobile apps, advanced automation, and global infrastructure capabilities. Now with marketplace ecosystem, IPO-ready financials, and enterprise-grade security.
 
-## 🚀 Phase 3: AI-Powered Enterprise Platform
+## 🚀 Phase 4: Global Platform & Advanced AI
 
-Dittopdf has evolved from a simple PDF tool suite to a comprehensive enterprise platform with AI capabilities, workflow automation, multi-tenant architecture, and mobile applications.
+Dittopdf has transformed into a global enterprise platform with multi-region deployment, marketplace ecosystem, predictive analytics, and IPO-ready financial reporting.
 
 ## ✨ Features
 
@@ -83,6 +83,44 @@ Dittopdf has evolved from a simple PDF tool suite to a comprehensive enterprise 
 - **Predictive Insights** - Usage forecasting and trends
 - **White-Label Billing** - Custom invoicing for enterprises
 
+### 🌍 Phase 4: Global Platform Features
+
+**Global Infrastructure:**
+- **Multi-Region Deployment** - AWS, Azure, GCP support
+- **Global CDN** - Edge computing and caching
+- **Automatic Failover** - 99.99% uptime architecture
+- **Geo-Routing** - Latency-optimized routing
+
+**Advanced AI Automation:**
+- **Intelligent Document Classification** - ML-powered categorization
+- **Smart Document Routing** - Rule-based automation
+- **AI Quality Assurance** - Automated quality checks
+- **Predictive Processing** - ML model predictions
+
+**Marketplace Platform:**
+- **Plugin Ecosystem** - Third-party integrations
+- **Developer Portal** - SDK and documentation
+- **Revenue Sharing** - 70/30 developer split
+- **Verified Reviews** - Installation-based verification
+
+**Enterprise Security:**
+- **Compliance Certifications** - ISO 27001, FedRAMP, HIPAA
+- **Advanced Fraud Detection** - Real-time risk scoring
+- **Behavioral Analytics** - User profiling
+- **Automated Incident Response** - Security orchestration
+
+**IPO-Ready Financials:**
+- **GAAP Reporting** - Compliant financial statements
+- **Investor Dashboard** - Real-time KPIs
+- **Revenue Recognition** - Automated accounting
+- **Audit Trail** - Complete transaction history
+
+**Customer Success:**
+- **Health Scoring** - Predictive churn analysis
+- **AI Support Automation** - Ticket classification
+- **At-Risk Detection** - Proactive intervention
+- **SLA Monitoring** - Performance tracking
+
 ## 🛠 Tech Stack
 
 - **Framework:** Next.js 15 with App Router
@@ -90,13 +128,17 @@ Dittopdf has evolved from a simple PDF tool suite to a comprehensive enterprise 
 - **Styling:** Tailwind CSS 3.4
 - **Database:** PostgreSQL with Prisma ORM
 - **PDF Processing:** pdf-lib, Tesseract.js
-- **AI/ML:** OpenAI GPT-4, TensorFlow.js
+- **AI/ML:** OpenAI GPT-4, TensorFlow.js, TensorFlow Node
 - **Authentication:** JWT with bcrypt, Passport.js
-- **Storage:** AWS S3 / Cloudinary / Local
-- **Queue:** Bull (Redis) for background jobs
-- **Payments:** Stripe
+- **Storage:** AWS S3 / Azure Blob / GCP Storage / Cloudinary
+- **Queue:** BullMQ (Redis) for background jobs
+- **Payments:** Stripe, QuickBooks
 - **Mobile:** React Native 0.72
-- **Security:** Helmet, CORS, Rate Limiting
+- **Security:** Helmet, CORS, Rate Limiting, Circuit Breakers
+- **Monitoring:** Prometheus, Jaeger, Winston
+- **Search:** Elasticsearch
+- **Streaming:** Kafka
+- **Resilience:** Opossum (Circuit Breakers)
 
 ## Getting Started
 
@@ -337,6 +379,52 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - `GET /api/v3/bi/dashboard` - Get analytics dashboard
 
 See [API_V3.md](./API_V3.md) for complete v3 API documentation.
+
+### API v4 - Global Platform
+
+**Global Infrastructure:**
+- `GET /api/v4/global/regions` - List regions
+- `POST /api/v4/global/regions` - Create region
+- `GET /api/v4/global/cdn` - CDN nodes and stats
+
+**AI Automation:**
+- `GET /api/v4/ai-automation/jobs` - List automation jobs
+- `POST /api/v4/ai-automation/jobs` - Create automation job
+
+**Marketplace:**
+- `GET /api/v4/marketplace/plugins` - List plugins
+- `POST /api/v4/marketplace/plugins` - Publish plugin
+- `GET /api/v4/marketplace/plugins/:slug` - Plugin details
+- `POST /api/v4/marketplace/plugins/:slug/install` - Install plugin
+- `POST /api/v4/marketplace/plugins/:slug/reviews` - Add review
+
+**Compliance:**
+- `GET /api/v4/compliance/certifications` - List certifications
+- `POST /api/v4/compliance/certifications` - Add certification
+
+**Business Intelligence:**
+- `GET /api/v4/bi/predictions` - Get predictions
+- `POST /api/v4/bi/predictions` - Train ML models
+- `GET /api/v4/bi/executive-dashboards` - Executive dashboards
+
+**Customer Success:**
+- `GET /api/v4/customer-success/health` - Health scores
+- `GET /api/v4/customer-success/tickets` - Support tickets
+- `POST /api/v4/customer-success/tickets` - Create ticket
+
+**Microservices:**
+- `GET /api/v4/microservices/routes` - API gateway routes
+- `POST /api/v4/microservices/routes` - Create route
+
+**Security:**
+- `POST /api/v4/security/fraud` - Fraud risk check
+- `GET /api/v4/security/fraud` - Fraud statistics
+
+**Financial:**
+- `GET /api/v4/financial/reports` - Financial reports
+- `POST /api/v4/financial/reports` - Generate report
+
+See [PHASE4.md](./PHASE4.md) for complete Phase 4 documentation.
 
 ## Usage Limits
 

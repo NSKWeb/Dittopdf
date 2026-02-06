@@ -695,3 +695,570 @@ model UserTenantRoles {
   @@index([tenantId])
   @@unique([userId, tenantId])
 }
+
+// Phase 4: Global Infrastructure & Multi-Region
+model GlobalRegions {
+  id                String              @id @default(cuid())
+  regionCode        String              @unique
+  regionName        String
+  provider          String
+  endpoint          String?
+  status            String              @default("active")
+  performanceMetrics Json?
+  failoverRegionId  String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([regionCode])
+  @@index([provider])
+  @@index([status])
+}
+
+model RegionDeployments {
+  id                String              @id @default(cuid())
+  regionId          String
+  serviceName       String
+  serviceVersion    String
+  endpoint          String
+  healthStatus      String              @default("healthy")
+  latency           Int?
+  lastHealthCheck   DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([regionId])
+  @@index([serviceName])
+  @@index([healthStatus])
+}
+
+model CDNEdgeNodes {
+  id                String              @id @default(cuid())
+  regionId          String
+  nodeLocation      String
+  ipAddress         String?
+  status            String              @default("active")
+  cacheHitRate      Float?
+  requestCount      Int                 @default(0)
+  bandwidthUsed     BigInt              @default(0)
+  lastActiveAt      DateTime?
+  createdAt         DateTime            @default(now())
+
+  @@index([regionId])
+  @@index([status])
+}
+
+// Phase 4: Marketplace Platform
+model MarketplacePlugins {
+  id                String              @id @default(cuid())
+  developerId       String
+  name              String
+  slug              String              @unique
+  description       String?
+  shortDescription  String?
+  version           String
+  category          String
+  pricingModel      String              @default("free")
+  price             Float?
+  revenueShare      Float               @default(0.70)
+  status            String              @default("pending")
+  downloadCount     Int                 @default(0)
+  rating            Float               @default(0)
+  reviewCount       Int                 @default(0)
+  iconUrl           String?
+  screenshots       String[]
+  documentationUrl  String?
+  repositoryUrl     String?
+  manifest          Json?
+  configSchema      Json?
+  permissions       String[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  reviews           PluginReviews[]
+  installations     PluginInstallations[]
+
+  @@index([developerId])
+  @@index([category])
+  @@index([status])
+  @@index([pricingModel])
+}
+
+model PluginReviews {
+  id                String              @id @default(cuid())
+  pluginId          String
+  userId            String
+  rating            Int
+  review            String?
+  isVerified        Boolean             @default(false)
+  helpfulCount      Int                 @default(0)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  plugin            MarketplacePlugins  @relation(fields: [pluginId], references: [id], onDelete: Cascade)
+
+  @@index([pluginId])
+  @@index([userId])
+}
+
+model PluginInstallations {
+  id                String              @id @default(cuid())
+  pluginId          String
+  tenantId          String?
+  userId            String?
+  config            Json?
+  status            String              @default("active")
+  installedAt       DateTime            @default(now())
+  lastUsedAt        DateTime?
+  plugin            MarketplacePlugins  @relation(fields: [pluginId], references: [id], onDelete: Cascade)
+
+  @@index([pluginId])
+  @@index([tenantId])
+  @@index([userId])
+}
+
+model MarketplaceDevelopers {
+  id                String              @id @default(cuid())
+  userId            String              @unique
+  displayName       String
+  bio               String?
+  website           String?
+  githubUrl         String?
+  verified          Boolean             @default(false)
+  totalEarnings     Float               @default(0)
+  payoutMethod      Json?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([userId])
+  @@index([verified])
+}
+
+model MarketplaceTransactions {
+  id                String              @id @default(cuid())
+  pluginId          String
+  developerId       String
+  buyerId           String
+  amount            Float
+  platformFee       Float
+  developerPayout   Float
+  transactionType   String
+  status            String              @default("pending")
+  createdAt         DateTime            @default(now())
+  completedAt       DateTime?
+
+  @@index([pluginId])
+  @@index([developerId])
+  @@index([status])
+}
+
+// Phase 4: Compliance Certifications
+model ComplianceCertifications {
+  id                String              @id @default(cuid())
+  tenantId          String?
+  certificationType String
+  standardVersion   String
+  issuedBy          String
+  issuedDate        DateTime
+  expiryDate        DateTime?
+  status            String              @default("active")
+  certificateUrl    String?
+  auditEvidence     Json?
+  nextAuditDate     DateTime?
+  controls          Json?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([tenantId])
+  @@index([certificationType])
+  @@index([status])
+  @@index([expiryDate])
+}
+
+model ComplianceControls {
+  id                String              @id @default(cuid())
+  certificationId   String
+  controlId         String
+  controlName       String
+  description       String?
+  status            String              @default("implemented")
+  evidence          Json?
+  lastTestedAt      DateTime?
+  nextTestDate      DateTime?
+  assignedTo        String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([certificationId])
+  @@index([controlId])
+  @@index([status])
+}
+
+model ComplianceAssessments {
+  id                String              @id @default(cuid())
+  tenantId          String?
+  assessmentType    String
+  framework         String
+  status            String              @default("in_progress")
+  score             Float?
+  findings          Json?
+  recommendations   Json?
+  assessedBy        String?
+  startedAt         DateTime            @default(now())
+  completedAt       DateTime?
+  createdAt         DateTime            @default(now())
+
+  @@index([tenantId])
+  @@index([assessmentType])
+  @@index([status])
+}
+
+// Phase 4: Fraud Detection & Security Monitoring
+model FraudDetectionLogs {
+  id                String              @id @default(cuid())
+  userId            String?
+  tenantId          String?
+  actionType        String
+  resourceType      String?
+  resourceId        String?
+  riskScore         Float
+  detectionModel    String
+  riskFactors       Json?
+  actionTaken       String              @default("monitored")
+  isConfirmedFraud  Boolean             @default(false)
+  ipAddress         String?
+  userAgent         String?
+  geolocation       Json?
+  deviceFingerprint String?
+  createdAt         DateTime            @default(now())
+
+  @@index([userId])
+  @@index([tenantId])
+  @@index([actionType])
+  @@index([riskScore])
+  @@index([createdAt])
+}
+
+model SecurityIncidents {
+  id                String              @id @default(cuid())
+  tenantId          String?
+  incidentType      String
+  severity          String
+  status            String              @default("detected")
+  description       String?
+  affectedResources Json?
+  indicators        Json?
+  responseActions   Json?
+  resolvedBy        String?
+  detectedAt        DateTime            @default(now())
+  resolvedAt        DateTime?
+  createdAt         DateTime            @default(now())
+
+  @@index([tenantId])
+  @@index([incidentType])
+  @@index([severity])
+  @@index([status])
+}
+
+model BehavioralProfiles {
+  id                String              @id @default(cuid())
+  userId            String              @unique
+  tenantId          String?
+  profileData       Json
+  riskLevel         String              @default("low")
+  baselineMetrics   Json?
+  anomalyScore      Float               @default(0)
+  lastUpdatedAt     DateTime            @default(now())
+  createdAt         DateTime            @default(now())
+
+  @@index([userId])
+  @@index([tenantId])
+  @@index([riskLevel])
+}
+
+// Phase 4: Financial Reporting
+model FinancialReports {
+  id                String              @id @default(cuid())
+  reportType        String
+  periodStart       DateTime
+  periodEnd         DateTime
+  currency          String              @default("USD")
+  revenue           Float               @default(0)
+  costs             Float               @default(0)
+  profit            Float               @default(0)
+  metrics           Json?
+  breakdown         Json?
+  status            String              @default("draft")
+  approvedBy        String?
+  approvedAt        DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([reportType])
+  @@index([periodStart])
+  @@index([status])
+}
+
+model FinancialTransactions {
+  id                String              @id @default(cuid())
+  transactionType   String
+  category          String
+  amount            Float
+  currency          String              @default("USD")
+  description       String?
+  referenceId       String?
+  metadata          Json?
+  recordedAt        DateTime            @default(now())
+  createdAt         DateTime            @default(now())
+
+  @@index([transactionType])
+  @@index([category])
+  @@index([recordedAt])
+}
+
+// Phase 4: Customer Success & Support
+model CustomerHealthScores {
+  id                String              @id @default(cuid())
+  tenantId          String              @unique
+  userId            String?
+  overallScore      Int                 @default(100)
+  usageScore        Int                 @default(100)
+  engagementScore   Int                 @default(100)
+  supportScore      Int                 @default(100)
+  paymentScore      Int                 @default(100)
+  factors           Json?
+  riskLevel         String              @default("low")
+  lastCalculatedAt  DateTime            @default(now())
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([riskLevel])
+}
+
+model SupportTickets {
+  id                String              @id @default(cuid())
+  tenantId          String?
+  userId            String
+  ticketNumber      String              @unique
+  subject           String
+  description       String?
+  category          String?
+  priority          String              @default("medium")
+  status            String              @default("open")
+  assignedTo        String?
+  aiClassification  String?
+  aiSuggestedResponse String?
+  resolutionTime    Int?
+  satisfactionScore Int?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  resolvedAt        DateTime?
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([status])
+  @@index([priority])
+}
+
+model CustomerSuccessWorkflows {
+  id                String              @id @default(cuid())
+  tenantId          String?
+  name              String
+  triggerType       String
+  triggerConditions Json?
+  actions           Json?
+  isActive          Boolean             @default(true)
+  executionCount    Int                 @default(0)
+  successRate       Float               @default(0)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([tenantId])
+  @@index([triggerType])
+  @@index([isActive])
+}
+
+// Phase 4: Microservices & API Gateway
+model Microservices {
+  id                String              @id @default(cuid())
+  serviceName       String              @unique
+  serviceVersion    String
+  endpoint          String
+  healthStatus      String              @default("healthy")
+  regionId          String?
+  dependencies      String[]
+  resourceUsage     Json?
+  lastDeployedAt    DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([serviceName])
+  @@index([healthStatus])
+  @@index([regionId])
+}
+
+model APIGatewayRoutes {
+  id                String              @id @default(cuid())
+  path              String
+  method            String
+  serviceId         String
+  targetEndpoint    String
+  rateLimit         Int                 @default(1000)
+  burstLimit        Int                 @default(2000)
+  authRequired      Boolean             @default(true)
+  cachingEnabled    Boolean             @default(false)
+  cacheTtl          Int                 @default(300)
+  circuitBreaker    Json?
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([path])
+  @@index([serviceId])
+  @@index([isActive])
+}
+
+model APIGatewayLogs {
+  id                String              @id @default(cuid())
+  routeId           String
+  requestId         String
+  clientIp          String?
+  userId            String?
+  requestMethod     String
+  requestPath       String
+  requestHeaders    Json?
+  requestBody       Json?
+  responseStatus    Int
+  responseTime      Int
+  responseHeaders   Json?
+  errorMessage      String?
+  createdAt         DateTime            @default(now())
+
+  @@index([routeId])
+  @@index([requestId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// Phase 4: Advanced BI & Predictive Analytics
+model PredictiveModels {
+  id                String              @id @default(cuid())
+  modelName         String              @unique
+  modelType         String
+  modelVersion      String
+  status            String              @default("training")
+  accuracy          Float?
+  features          String[]
+  hyperparameters   Json?
+  trainingDataSize  Int?
+  lastTrainedAt     DateTime?
+  deploymentStatus  String              @default("staging")
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([modelName])
+  @@index([modelType])
+  @@index([status])
+}
+
+model Predictions {
+  id                String              @id @default(cuid())
+  modelId           String
+  entityType        String
+  entityId          String
+  predictionType    String
+  predictedValue    Json
+  confidence        Float
+  actualValue       Json?
+  accuracy          Float?
+  features          Json?
+  createdAt         DateTime            @default(now())
+  resolvedAt        DateTime?
+
+  @@index([modelId])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([predictionType])
+}
+
+model ExecutiveDashboards {
+  id                String              @id @default(cuid())
+  tenantId          String?
+  name              String
+  description       String?
+  dashboardType     String
+  config            Json
+  kpis              Json?
+  refreshInterval   Int                 @default(300)
+  isDefault         Boolean             @default(false)
+  isShared          Boolean             @default(false)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([tenantId])
+  @@index([dashboardType])
+  @@index([isDefault])
+}
+
+// Phase 4: AI Automation Intelligence
+model AIAutomationJobs {
+  id                String              @id @default(cuid())
+  tenantId          String?
+  userId            String?
+  jobType           String
+  automationType    String
+  inputData         Json?
+  outputData        Json?
+  mlModelId         String?
+  confidenceScore   Float?
+  executionTime     Int?
+  status            String              @default("pending")
+  retryCount        Int                 @default(0)
+  errorMessage      String?
+  createdAt         DateTime            @default(now())
+  startedAt         DateTime?
+  completedAt       DateTime?
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([jobType])
+  @@index([status])
+}
+
+model DocumentRoutingRules {
+  id                String              @id @default(cuid())
+  tenantId          String
+  name              String
+  description       String?
+  conditions        Json
+  actions           Json
+  priority          Int                 @default(0)
+  isActive          Boolean             @default(true)
+  matchCount        Int                 @default(0)
+  successRate       Float               @default(0)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([tenantId])
+  @@index([isActive])
+  @@index([priority])
+}
+
+model AIQualityAssurance {
+  id                String              @id @default(cuid())
+  documentId        String
+  fileId            String?
+  tenantId          String?
+  checkType         String
+  qualityScore      Float
+  issues            Json?
+  recommendations   Json?
+  automatedFixes    Json?
+  status            String              @default("completed")
+  reviewedBy        String?
+  reviewedAt        DateTime?
+  createdAt         DateTime            @default(now())
+
+  @@index([documentId])
+  @@index([tenantId])
+  @@index([checkType])
+}

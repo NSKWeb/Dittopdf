@@ -1,6 +1,6 @@
 {
   "name": "dittopdf",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,7 +12,9 @@
     "prisma:migrate": "prisma migrate dev",
     "mobile:ios": "cd mobile && npx react-native run-ios",
     "mobile:android": "cd mobile && npx react-native run-android",
-    "ai:train": "node scripts/ai-training.js"
+    "ai:train": "node scripts/ai-training.js",
+    "ai:predict": "node scripts/predictive-analytics.js",
+    "global:health": "node scripts/global-health-check.js"
   },
   "dependencies": {
     "@prisma/client": "^5.0.0",
@@ -64,7 +66,23 @@
     "pptx-parser": "^1.0.0",
     "jsforce": "^1.11.1",
     "@microsoft/microsoft-graph-client": "^3.0.7",
-    "googleapis": "^128.0.0"
+    "googleapis": "^128.0.0",
+    "@tensorflow/tfjs-node": "^4.10.0",
+    "prom-client": "^15.0.0",
+    "ioredis": "^5.3.2",
+    "elasticsearch": "^16.7.3",
+    "kafkajs": "^2.2.4",
+    "jaeger-client": "^3.19.0",
+    "quickbooks-node": "^1.0.0",
+    "stripe": "^14.0.0",
+    "axios": "^1.6.0",
+    "jsonwebtoken": "^9.0.0",
+    "winston": "^3.11.0",
+    "winston-elasticsearch": "^0.17.4",
+    "rate-limiter-flexible": "^4.0.1",
+    "opossum": "^8.1.3",
+    "async": "^3.2.5",
+    "bullmq": "^4.15.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.0",
