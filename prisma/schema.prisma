@@ -18,6 +18,10 @@ model Users {
   planType      String      @default("Free")
   files         Files[]
   usageLogs     UsageLogs[]
+  ocrJobs       OcrJobs[]
+  signatures    Signatures[]
+  batchJobs     BatchJobs[]
+  apiKeys       ApiKeys[]
 }
 
 model Files {
@@ -38,5 +42,47 @@ model UsageLogs {
   toolUsed  String
   fileSize  Int
   timestamp DateTime @default(now())
+  user      Users    @relation(fields: [userId], references: [id])
+}
+
+model OcrJobs {
+  id        String   @id @default(cuid())
+  userId    String
+  fileId    String
+  status    String   @default("pending")
+  result    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      Users    @relation(fields: [userId], references: [id])
+}
+
+model Signatures {
+  id             String   @id @default(cuid())
+  userId         String
+  fileId         String
+  signatureData  String
+  status         String   @default("valid")
+  createdAt      DateTime @default(now())
+  user           Users    @relation(fields: [userId], references: [id])
+}
+
+model BatchJobs {
+  id        String   @id @default(cuid())
+  userId    String
+  status    String   @default("pending")
+  jobType   String
+  payload   Json
+  result    Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      Users    @relation(fields: [userId], references: [id])
+}
+
+model ApiKeys {
+  id        String   @id @default(cuid())
+  userId    String
+  key       String   @unique
+  name      String?
+  createdAt DateTime @default(now())
   user      Users    @relation(fields: [userId], references: [id])
 }
