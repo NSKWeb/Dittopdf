@@ -1,54 +1,153 @@
 import { AdSlot } from "@/components/ad-slot";
 
-const tools = [
-  { name: "Merge PDFs", slug: "merge" },
-  { name: "Split PDF", slug: "split" },
-  { name: "Compress PDF", slug: "compress" },
-  { name: "Rotate PDF", slug: "rotate" },
-  { name: "PDF to Word/Excel/PowerPoint", slug: "pdf-to-office" },
-  { name: "PDF to JPG/PNG", slug: "pdf-to-images" },
-  { name: "Images to PDF", slug: "images-to-pdf" },
-  { name: "PDF to Text", slug: "pdf-to-text" },
-  { name: "Password Protect PDF", slug: "protect" },
-  { name: "Remove PDF Password", slug: "unlock" },
-  { name: "Text Watermark", slug: "watermark-text" },
-  { name: "Image Watermark", slug: "watermark-image" },
-  { name: "Text Annotations", slug: "annotate" },
-  { name: "Extract Pages", slug: "extract-pages" },
-  { name: "Extract Images", slug: "extract-images" },
-  { name: "Edit Metadata", slug: "metadata" }
+const toolCategories = [
+  {
+    name: "Basic Tools",
+    tools: [
+      { name: "Merge PDFs", slug: "merge", description: "Combine multiple PDFs into one" },
+      { name: "Split PDF", slug: "split", description: "Extract pages or ranges" },
+      { name: "Compress PDF", slug: "compress", description: "Reduce file size" },
+      { name: "Rotate PDF", slug: "rotate", description: "Rotate pages by 90°/180°/270°" }
+    ]
+  },
+  {
+    name: "Conversion Tools",
+    tools: [
+      { name: "PDF to Office", slug: "pdf-to-office", description: "Convert to Word, Excel, PowerPoint" },
+      { name: "PDF to Images", slug: "pdf-to-images", description: "Export as JPG or PNG" },
+      { name: "Images to PDF", slug: "images-to-pdf", description: "Convert JPG/PNG to PDF" },
+      { name: "PDF to Text", slug: "pdf-to-text", description: "Extract text from PDF" }
+    ]
+  },
+  {
+    name: "Security Tools",
+    tools: [
+      { name: "Password Protect", slug: "protect", description: "Encrypt with password" },
+      { name: "Remove Password", slug: "unlock", description: "Remove password protection" },
+      { name: "Text Watermark", slug: "watermark-text", description: "Add text watermark" },
+      { name: "Image Watermark", slug: "watermark-image", description: "Add image/logo watermark" }
+    ]
+  },
+  {
+    name: "Advanced Tools",
+    tools: [
+      { name: "Text Annotations", slug: "annotate", description: "Add notes and highlights" },
+      { name: "Extract Pages", slug: "extract-pages", description: "Pull specific pages" },
+      { name: "Extract Images", slug: "extract-images", description: "Download embedded images" },
+      { name: "Edit Metadata", slug: "metadata", description: "Edit title, author, subject" }
+    ]
+  }
 ];
 
 export default function HomePage() {
   return (
-    <section className="px-6 py-12 max-w-6xl mx-auto">
-      <div className="grid gap-8 lg:grid-cols-[1fr_260px]">
-        <div className="space-y-8">
-          <div className="space-y-4">
-            <h1 className="text-4xl font-semibold">All-in-one PDF suite for modern teams</h1>
-            <p className="text-slate-300 max-w-2xl">
-              Convert, compress, protect, and manage your documents in one secure workspace. Dittopdf Phase 1
-              MVP includes 16 production-ready tools, cloud storage, and detailed analytics.
+    <section className="px-4 sm:px-6 py-8 max-w-7xl mx-auto">
+      <div className="grid gap-8 lg:grid-cols-[1fr_300px]">
+        <div className="space-y-12">
+          <div className="space-y-6">
+            <h1 className="text-4xl sm:text-5xl font-semibold">
+              All-in-one PDF suite for modern teams
+            </h1>
+            <p className="text-slate-300 max-w-2xl text-lg">
+              Convert, compress, protect, and manage your documents in one secure workspace. 
+              Dittopdf Phase 1 MVP includes 16 production-ready tools, cloud storage, and detailed analytics.
             </p>
+            <div className="flex flex-wrap gap-3">
+              <div className="flex items-center gap-2 text-sm text-green-400">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                16 PDF Tools
+              </div>
+              <div className="flex items-center gap-2 text-sm text-green-400">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Free to Use
+              </div>
+              <div className="flex items-center gap-2 text-sm text-green-400">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                No Sign-up Required
+              </div>
+              <div className="flex items-center gap-2 text-sm text-green-400">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Secure & Private
+              </div>
+            </div>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {tools.map((tool) => (
-              <a
-                key={tool.slug}
-                href={`/tools/${tool.slug}`}
-                className="gradient-border rounded-xl p-5 bg-panel hover:border-accent transition"
-              >
-                <div className="text-lg font-medium">{tool.name}</div>
-                <p className="text-xs text-slate-400 mt-2">Start processing files →</p>
-              </a>
-            ))}
-          </div>
+
+          {toolCategories.map((category) => (
+            <div key={category.name} className="space-y-4">
+              <h2 className="text-2xl font-semibold">{category.name}</h2>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {category.tools.map((tool) => (
+                  <a
+                    key={tool.slug}
+                    href={`/tools/${tool.slug}`}
+                    className="gradient-border rounded-xl p-5 bg-panel hover:border-accent transition group"
+                  >
+                    <div className="text-lg font-medium group-hover:text-accent transition">
+                      {tool.name}
+                    </div>
+                    <p className="text-sm text-slate-400 mt-1">{tool.description}</p>
+                    <div className="text-xs text-accent mt-2 opacity-0 group-hover:opacity-100 transition">
+                      Get started →
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
-        <div className="space-y-4">
+
+        <div className="space-y-4 lg:mt-16">
           <AdSlot position="sidebar" />
+          <div className="gradient-border rounded-xl p-5 bg-panel space-y-4">
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.3em] text-slate-500">Free Plan</div>
+              <p className="mt-2 text-2xl font-semibold">5 files / day</p>
+              <p className="text-sm text-slate-400 mt-1">Perfect for occasional use</p>
+            </div>
+            <div className="h-px bg-slate-700" />
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.3em] text-accent">Pro Plan</div>
+              <p className="mt-2 text-2xl font-semibold text-accent">Unlimited</p>
+              <p className="text-sm text-slate-400 mt-1">For power users and teams</p>
+            </div>
+          </div>
+
           <div className="gradient-border rounded-xl p-5 bg-panel text-xs text-slate-400">
-            <div className="text-[10px] uppercase tracking-[0.3em] text-slate-500">Usage limits</div>
-            <p className="mt-3">Free users can process up to 5 files per day. Upgrade to Pro for unlimited use.</p>
+            <div className="text-[10px] uppercase tracking-[0.3em] text-slate-500 mb-3">Features</div>
+            <ul className="space-y-2">
+              <li className="flex items-start gap-2">
+                <svg className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span>Max 25MB file size</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <svg className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span>Local file processing</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <svg className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span>1-hour file retention</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <svg className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span>No account required</span>
+              </li>
+            </ul>
           </div>
         </div>
       </div>

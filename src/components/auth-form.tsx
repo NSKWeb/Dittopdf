@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export function AuthForm({ mode }: { mode: "login" | "register" }) {
-  const [status, setStatus] = useState<string | null>(null);
+  const router = useRouter();
+  const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const submitLabel = mode === "login" ? "Sign in" : "Create account";
@@ -25,7 +27,16 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
 
     const data = await res.json();
     setLoading(false);
-    setStatus(data.message ?? (res.ok ? "Success" : "Something went wrong"));
+
+    if (res.ok) {
+      setStatus({ type: "success", message: data.message ?? "Success" });
+      setTimeout(() => {
+        router.push("/dashboard");
+        router.refresh();
+      }, 500);
+    } else {
+      setStatus({ type: "error", message: data.message ?? "Something went wrong" });
+    }
   }
 
   return (
@@ -42,7 +53,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           type="email"
           placeholder="Email address"
           required
-          className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2"
+          className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 focus:border-accent focus:outline-none transition"
         />
         <input
           name="password"
@@ -50,17 +61,21 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           placeholder="Password"
           required
           minLength={8}
-          className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2"
+          className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 focus:border-accent focus:outline-none transition"
         />
       </div>
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-md bg-accent text-slate-900 font-medium py-2 disabled:opacity-60"
+        className="w-full rounded-md bg-accent text-slate-900 font-medium py-2 disabled:opacity-60 hover:opacity-90 transition"
       >
         {loading ? "Processing..." : submitLabel}
       </button>
-      {status && <p className="text-sm text-slate-300">{status}</p>}
+      {status && (
+        <p className={`text-sm ${status.type === "success" ? "text-green-400" : "text-red-400"}`}>
+          {status.message}
+        </p>
+      )}
     </form>
   );
 }
