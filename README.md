@@ -1,57 +1,102 @@
-# Dittopdf - Complete PDF Tool Suite
+# Dittopdf - Enterprise PDF Platform
 
-A production-ready SaaS platform with 16 core PDF tools, user authentication, file storage, and monetization.
+A production-ready AI-powered SaaS platform with 25+ PDF tools, enterprise features, mobile apps, and advanced automation capabilities.
 
-## Features
+## 🚀 Phase 3: AI-Powered Enterprise Platform
 
-### 16 PDF Tools
+Dittopdf has evolved from a simple PDF tool suite to a comprehensive enterprise platform with AI capabilities, workflow automation, multi-tenant architecture, and mobile applications.
+
+## ✨ Features
+
+### Core PDF Tools (25+)
 
 **Basic Tools:**
 - Merge PDFs - Combine multiple files into one
 - Split PDF - Extract pages or ranges
 - Compress PDF - Reduce file size
 - Rotate PDF - Rotate pages by 90°/180°/270°
+- Reorder Pages - Rearrange page order
+- Delete Pages - Remove specific pages
 
 **Conversion Tools:**
 - PDF to Office - Convert to Word, Excel, PowerPoint
 - PDF to Images - Export as JPG or PNG
 - Images to PDF - Convert JPG/PNG to PDF
 - PDF to Text - Extract text from PDFs
+- PDF/A Export - Archive format conversion
+- PDF/X Export - Print-ready format
 
-**Security Tools:**
+**Security & Editing:**
 - Password Protect PDF - Encrypt with password
 - Remove Password - Remove password protection
 - Text Watermark - Add text watermark
 - Image Watermark - Add image/logo watermark
 - Text Annotations - Add notes and highlights
-
-**Advanced Tools:**
 - Extract Pages - Pull specific pages
 - Extract Images - Download embedded images
 - Edit Metadata - Edit title, author, subject
 
-### Core Features
+### 🤖 AI-Powered Features
 
-- ✅ User authentication with JWT
-- ✅ File upload with validation (max 25MB)
-- ✅ Multiple storage options (Local, AWS S3, Cloudinary)
-- ✅ Usage tracking and analytics
-- ✅ Free and Pro plan tiers
-- ✅ Daily usage limits (5 files/day for free users)
-- ✅ Responsive dark theme design
-- ✅ Google AdSense integration
-- ✅ Rate limiting for API endpoints
-- ✅ Secure file handling with auto-cleanup
+- **AI Document Analysis** - Intelligent content analysis using GPT-4
+- **Smart Summarization** - Automatic document summarization
+- **Entity Extraction** - Extract names, dates, amounts, organizations
+- **Document Classification** - Auto-categorize documents (invoice, contract, resume, etc.)
+- **Content Optimization** - AI-powered improvement suggestions
+- **Quality Assessment** - Automated quality scoring
+- **Layout Suggestions** - Design and formatting recommendations
+- **Similarity Matching** - Find related documents
+- **Q&A System** - Ask questions about document content
 
-## Tech Stack
+### 🔄 Workflow Automation
+
+- **Visual Workflow Designer** - Drag-and-drop workflow builder
+- **Automated Pipelines** - Trigger-based document processing
+- **Conditional Logic** - Branch workflows based on conditions
+- **Template Library** - Pre-built workflow templates
+- **Integration Triggers** - Email, webhook, schedule, API-based triggers
+
+### 🏢 Enterprise Features
+
+- **Multi-Tenant Architecture** - Complete tenant isolation
+- **White-Label Solution** - Custom branding and domains
+- **Single Sign-On (SSO)** - SAML 2.0 and OAuth 2.0 support
+- **Role-Based Access Control** - Granular permissions system
+- **Advanced Security** - SOC 2, GDPR, HIPAA compliance tools
+- **Audit Logging** - Comprehensive activity tracking
+- **Custom Integrations** - Salesforce, SharePoint, Google Workspace
+
+### 📱 Mobile Applications
+
+- **Native iOS & Android Apps** - Built with React Native
+- **Offline Mode** - Work without internet connection
+- **Biometric Authentication** - Face ID and Touch ID
+- **Cloud Sync** - Automatic synchronization
+- **Push Notifications** - Real-time workflow alerts
+- **Mobile-Optimized Viewer** - Enhanced PDF viewing experience
+
+### 💰 Billing & Analytics
+
+- **Flexible Pricing** - Free, Pro, Business, Enterprise tiers
+- **Usage-Based Billing** - Metered billing for enterprises
+- **Advanced Analytics** - Business intelligence dashboards
+- **Predictive Insights** - Usage forecasting and trends
+- **White-Label Billing** - Custom invoicing for enterprises
+
+## 🛠 Tech Stack
 
 - **Framework:** Next.js 15 with App Router
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS 3.4
 - **Database:** PostgreSQL with Prisma ORM
-- **PDF Processing:** pdf-lib
-- **Authentication:** JWT with bcrypt
+- **PDF Processing:** pdf-lib, Tesseract.js
+- **AI/ML:** OpenAI GPT-4, TensorFlow.js
+- **Authentication:** JWT with bcrypt, Passport.js
 - **Storage:** AWS S3 / Cloudinary / Local
+- **Queue:** Bull (Redis) for background jobs
+- **Payments:** Stripe
+- **Mobile:** React Native 0.72
+- **Security:** Helmet, CORS, Rate Limiting
 
 ## Getting Started
 
@@ -116,32 +161,107 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Database Schema
 
-### Users Table
+### Core Tables
+
+**Users**
 - `id` - Unique identifier (CUID)
 - `email` - User email (unique)
 - `passwordHash` - Bcrypt hashed password
-- `createdAt` - Account creation timestamp
-- `updatedAt` - Last update timestamp
-- `usageCount` - Daily usage counter
-- `lastResetDate` - Usage reset timestamp
-- `planType` - User plan (Free/Pro)
+- `tenantId` - Associated tenant (for enterprise)
+- `role` - User role
+- `planType` - User plan (Free/Pro/Business/Enterprise)
+- `twoFactorEnabled` - 2FA status
+- `createdAt`, `updatedAt` - Timestamps
 
-### Files Table
+**Files**
 - `id` - Unique identifier (CUID)
-- `userId` - User who uploaded the file
-- `originalFilename` - Original file name
-- `processedFilename` - Processed file name
-- `fileSize` - File size in bytes
-- `toolUsed` - Tool that processed the file
+- `userId`, `tenantId` - Ownership
+- `originalFilename`, `processedFilename` - File names
+- `fileSize` - Size in bytes
+- `toolUsed` - Processing tool
+- `classification` - AI document category
+- `tags` - Auto-generated tags
+- `aiAnalysis` - AI analysis results
 - `status` - Processing status
-- `createdAt` - Upload timestamp
 
-### UsageLogs Table
-- `id` - Unique identifier (CUID)
-- `userId` - User who used the tool
-- `toolUsed` - Tool that was used
-- `fileSize` - Processed file size
-- `timestamp` - Usage timestamp
+**Tenants (Enterprise)**
+- `id` - Unique identifier
+- `name`, `domain`, `subdomain` - Tenant identifiers
+- `branding` - White-label configuration
+- `settings` - Feature flags and limits
+- `planType` - Enterprise plan
+
+### AI & Automation Tables
+
+**AiJobs** - AI analysis jobs
+- `userId`, `fileId` - Associated resources
+- `jobType` - Type of analysis
+- `aiModel` - GPT-4 or other models
+- `inputData`, `outputData` - Job data
+- `confidenceScore`, `processingTime` - Metrics
+- `tokensUsed`, `cost` - Usage tracking
+
+**Workflows** - Automation workflows
+- `userId`, `tenantId` - Ownership
+- `name`, `description` - Workflow info
+- `definition` - Node/edge configuration
+- `triggers` - Activation triggers
+- `isActive`, `isTemplate` - Status flags
+
+**WorkflowRuns** - Workflow executions
+- `workflowId` - Parent workflow
+- `status` - Execution status
+- `progress` - Completion percentage
+- `inputData`, `outputData` - Run data
+
+### Enterprise Tables
+
+**ComplianceLogs** - Compliance tracking
+- `action`, `resourceType` - What happened
+- `complianceStatus` - GDPR, SOC2 status
+- `regulationType` - Which regulation
+- `ipAddress`, `userAgent` - Context
+
+**AuditLogs** - Comprehensive audit trail
+- `action`, `entityType`, `entityId` - Event details
+- `oldValues`, `newValues` - Change tracking
+
+**TenantRoles** - RBAC roles
+- `tenantId` - Associated tenant
+- `name`, `permissions` - Role configuration
+
+**UserTenantRoles** - User role assignments
+
+### Mobile Tables
+
+**MobileDevices** - Registered devices
+- `userId` - Device owner
+- `deviceId`, `platform` - Device info
+- `pushToken` - Push notification token
+- `lastActiveAt` - Activity tracking
+
+### Billing Tables
+
+**Subscriptions** - Subscription management
+- `stripeCustomerId`, `stripeSubscriptionId` - Stripe IDs
+- `planType`, `status` - Subscription info
+- `usageLimits`, `features` - Plan configuration
+
+**Invoices** - Billing records
+- `subscriptionId` - Associated subscription
+- `amount`, `currency`, `status` - Payment details
+
+**BillingMeters** - Usage metering
+- `metricType`, `metricValue` - Usage data
+- `periodStart`, `periodEnd` - Billing period
+
+### Analytics Tables
+
+**AnalyticsEvents** - Event tracking
+- `eventType`, `eventName` - Event details
+- `properties` - Event metadata
+
+**AnalyticsDashboards** - Custom dashboards
 
 ## API Endpoints
 
@@ -165,17 +285,96 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - `GET /api/user/profile` - Get user profile
 - `PATCH /api/user/profile` - Update user profile
 
+### API v3 - AI & Enterprise
+
+**AI Analysis:**
+- `POST /api/v3/ai/analyze` - AI document analysis
+- `POST /api/v3/ai/compare` - Compare documents
+- `POST /api/v3/ai/ask` - Document Q&A
+
+**Document Classification:**
+- `POST /api/v3/classify/document` - Classify and tag documents
+- `GET /api/v3/classify/document` - Get classified documents
+
+**Workflows:**
+- `POST /api/v3/workflows` - Create workflow
+- `GET /api/v3/workflows` - List workflows
+- `POST /api/v3/workflows/{id}/run` - Execute workflow
+
+**Tenant Management:**
+- `POST /api/v3/tenant` - Create tenant
+- `GET /api/v3/tenant` - Get tenant info
+
+**White-Label:**
+- `GET /api/v3/white-label/branding` - Get branding
+- `POST /api/v3/white-label/branding` - Update branding
+- `POST /api/v3/white-label/domain` - Add custom domain
+
+**SSO:**
+- `GET /api/v3/tenant/sso` - Get SSO settings
+- `POST /api/v3/tenant/sso` - Configure SSO
+
+**Compliance:**
+- `GET /api/v3/compliance/audit` - Get audit logs
+- `GET /api/v3/compliance/report` - Compliance reports
+
+**Billing:**
+- `GET /api/v3/billing/subscription` - Get subscription
+- `POST /api/v3/billing/subscription` - Create subscription
+- `GET /api/v3/billing/usage` - Get usage metrics
+
+**Integrations:**
+- `GET /api/v3/integrations` - List integrations
+- `POST /api/v3/integrations` - Add integration
+- `POST /api/v3/integrations/{id}/sync` - Sync integration
+
+**Mobile:**
+- `POST /api/v3/mobile/device` - Register device
+- `GET /api/v3/mobile/device` - List devices
+- `POST /api/v3/mobile/sync` - Sync files
+
+**Business Intelligence:**
+- `GET /api/v3/bi/dashboard` - Get analytics dashboard
+
+See [API_V3.md](./API_V3.md) for complete v3 API documentation.
+
 ## Usage Limits
 
 ### Free Plan
 - 5 files per day
 - Max 25MB file size
+- Basic PDF tools only
 - Files deleted after 1 hour
 
-### Pro Plan
+### Pro Plan ($19/month)
 - Unlimited files
-- Max 25MB file size
-- Files deleted after 1 hour
+- Max 50MB file size
+- All PDF tools
+- OCR & e-signatures
+- 50 AI analyses/month
+- 5 workflows
+- 10GB storage
+
+### Business Plan ($49/month)
+- Everything in Pro
+- Max 100MB file size
+- 200 AI analyses/month
+- 20 workflows
+- 25GB storage
+- API access
+- Team collaboration
+
+### Enterprise Plan ($199/month)
+- Everything in Business
+- Max 250MB file size
+- Unlimited AI analysis
+- Unlimited workflows
+- Unlimited storage
+- Multi-tenant support
+- White-label options
+- SSO integration
+- Custom contracts
+- Dedicated support
 
 ## Deployment
 
@@ -190,10 +389,35 @@ npm run start
 
 Make sure to set all required environment variables in your production environment:
 
+**Core:**
 - `DATABASE_URL` - PostgreSQL connection string
 - `JWT_SECRET` - Secure secret for JWT signing
-- Storage provider credentials (AWS S3 or Cloudinary)
 - `NODE_ENV=production`
+
+**AI Services:**
+- `OPENAI_API_KEY` - OpenAI API key for GPT-4
+
+**Storage:**
+- Storage provider credentials (AWS S3 or Cloudinary)
+
+**Payments:**
+- `STRIPE_SECRET_KEY` - Stripe secret key
+- `STRIPE_PUBLISHABLE_KEY` - Stripe publishable key
+- `STRIPE_WEBHOOK_SECRET` - Stripe webhook secret
+- `STRIPE_PRICE_PRO`, `STRIPE_PRICE_BUSINESS`, `STRIPE_PRICE_ENTERPRISE` - Price IDs
+
+**SSO:**
+- `SAML_CERT` - SAML certificate
+- OAuth provider credentials
+
+**Mobile Push Notifications:**
+- `FCM_SERVER_KEY` - Firebase Cloud Messaging server key
+- `APN_KEY_PATH`, `APN_KEY_ID`, `APN_TEAM_ID` - Apple Push Notification credentials
+
+**Integrations:**
+- `SALESFORCE_CLIENT_ID`, `SALESFORCE_CLIENT_SECRET`
+- `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
 
 ### Recommended Platforms
 
@@ -201,16 +425,25 @@ Make sure to set all required environment variables in your production environme
 - Railway
 - Render
 - AWS (ECS, Elastic Beanstalk)
+- Google Cloud Platform
+- Azure
 
 ## Security Features
 
 - Password hashing with bcrypt (12 rounds)
-- JWT token-based authentication
+- JWT token-based authentication with session management
 - Rate limiting on API endpoints
 - File type and size validation
 - Automatic file cleanup
 - Protected routes with middleware
 - CORS protection
+- **SOC 2 Type II compliance tools**
+- **GDPR compliance features**
+- **Audit logging and compliance reporting**
+- **Advanced encryption at rest and in transit**
+- **Role-based access control (RBAC)**
+- **Two-factor authentication support**
+- **IP-based access restrictions**
 
 ## AdSense Integration
 
@@ -226,24 +459,45 @@ Google AdSense is integrated with placeholder components. To enable:
 ```
 dittopdf/
 ├── src/
-│   ├── app/              # Next.js App Router
-│   │   ├── api/         # API routes
-│   │   ├── auth/        # Authentication pages
-│   │   ├── dashboard/   # User dashboard
-│   │   ├── tools/       # PDF tool pages
-│   │   └── downloads/   # File downloads
-│   ├── components/      # React components
-│   └── lib/            # Utility libraries
+│   ├── app/                  # Next.js App Router
+│   │   ├── api/             # API routes
+│   │   │   ├── auth/        # Authentication (v1)
+│   │   │   ├── v2/          # Phase 2 API (OCR, batch, signatures)
+│   │   │   └── v3/          # Phase 3 API (AI, enterprise)
+│   │   ├── auth/            # Authentication pages
+│   │   ├── dashboard/       # User dashboard
+│   │   ├── tools/           # PDF tool pages
+│   │   └── downloads/       # File downloads
+│   ├── components/          # React components
+│   └── lib/                 # Utility libraries
+│       ├── ai/              # AI services (OpenAI, TensorFlow)
+│       ├── analytics/       # Business intelligence
+│       ├── billing/         # Stripe integration
+│       ├── compliance/      # Audit & compliance
+│       ├── integrations/    # Enterprise integrations
+│       ├── mobile/          # Mobile app services
+│       ├── tenant/          # Multi-tenant & white-label
+│       └── workflow/        # Automation engine
 ├── prisma/
-│   └── schema.prisma    # Database schema
-├── public/              # Static assets
-└── .env.example         # Environment variables template
+│   └── schema.prisma        # Database schema
+├── mobile/                  # React Native mobile app
+│   ├── src/
+│   │   ├── components/      # Mobile components
+│   │   ├── screens/         # App screens
+│   │   ├── services/        # API services
+│   │   └── store/           # Redux store
+│   ├── android/             # Android-specific
+│   └── ios/                 # iOS-specific
+├── public/                  # Static assets
+├── API_V3.md                # Phase 3 API documentation
+└── .env.example             # Environment variables template
 ```
 
 ## Development
 
 ### Available Scripts
 
+**Web Application:**
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run start` - Start production server
@@ -251,11 +505,25 @@ dittopdf/
 - `npm run prisma:generate` - Generate Prisma client
 - `npm run prisma:migrate` - Run database migrations
 
+**Mobile Application:**
+- `npm run mobile:ios` - Run iOS app
+- `npm run mobile:android` - Run Android app
+
+**AI Services:**
+- `npm run ai:train` - Train AI classification models
+
 ### Adding New Tools
 
 1. Add tool to `src/lib/tools.ts`
 2. Implement tool logic in `src/lib/pdf-tools.ts`
 3. Tool automatically becomes available at `/tools/[slug]`
+
+### Adding AI Features
+
+1. Add analysis type to `src/lib/ai/openai.ts`
+2. Create prompt template
+3. Add API endpoint in `src/app/api/v3/ai/`
+4. Update frontend components
 
 ## License
 

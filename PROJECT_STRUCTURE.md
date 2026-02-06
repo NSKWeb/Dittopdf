@@ -1,53 +1,81 @@
 # Dittopdf Project Structure
 
-## Directory Overview
+## Phase 3: AI-Powered Enterprise Platform
+
+This document describes the complete project structure including Phase 3 AI-powered enterprise features.
 
 ```
 dittopdf/
 ├── prisma/
-│   └── schema.prisma              # Database schema and models
+│   └── schema.prisma              # Extended database schema with Phase 3 tables
 ├── public/                        # Static assets
 │   ├── robots.txt                 # SEO robots file
 │   └── manifest.json             # PWA manifest
+├── mobile/                        # React Native Mobile App (Phase 3)
+│   ├── package.json              # Mobile app dependencies
+│   ├── src/
+│   │   ├── components/           # Mobile React components
+│   │   ├── screens/              # App screens
+│   │   │   ├── HomeScreen.tsx
+│   │   │   └── ...
+│   │   ├── services/             # API services
+│   │   │   └── api.ts
+│   │   ├── store/                # Redux store
+│   │   └── utils/                # Mobile utilities
+│   ├── android/                  # Android-specific files
+│   └── ios/                      # iOS-specific files
 ├── src/
 │   ├── app/                      # Next.js App Router
 │   │   ├── api/                 # API routes
-│   │   │   ├── auth/            # Authentication endpoints
+│   │   │   ├── auth/            # Authentication endpoints (v1)
 │   │   │   │   ├── login/
-│   │   │   │   │   └── route.ts
 │   │   │   │   ├── logout/
-│   │   │   │   │   └── route.ts
 │   │   │   │   ├── me/
-│   │   │   │   │   └── route.ts
 │   │   │   │   └── register/
-│   │   │   │       └── route.ts
 │   │   │   ├── dashboard/        # Dashboard API
-│   │   │   │   └── overview/
-│   │   │   │       └── route.ts
 │   │   │   ├── files/           # File management
-│   │   │   │   ├── history/
-│   │   │   │   │   └── route.ts
-│   │   │   │   └── upload/
-│   │   │   │       └── route.ts
 │   │   │   ├── tools/           # PDF processing
-│   │   │   │   └── [tool]/
-│   │   │   │       └── route.ts
-│   │   │   └── user/            # User management
-│   │   │       └── profile/
-│   │   │           └── route.ts
+│   │   │   ├── user/            # User management
+│   │   │   ├── v2/              # Phase 2 API
+│   │   │   │   ├── batch/       # Batch processing
+│   │   │   │   ├── editor/      # PDF editing
+│   │   │   │   ├── ocr/         # OCR processing
+│   │   │   │   └── signatures/  # E-signatures
+│   │   │   └── v3/              # Phase 3 API (AI & Enterprise)
+│   │   │       ├── ai/          # AI-powered analysis
+│   │   │       │   ├── analyze/
+│   │   │       │   ├── ask/
+│   │   │       │   └── compare/
+│   │   │       ├── bi/          # Business intelligence
+│   │   │       │   └── dashboard/
+│   │   │       ├── billing/     # Subscription management
+│   │   │       │   ├── subscription/
+│   │   │       │   └── usage/
+│   │   │       ├── classify/    # Document classification
+│   │   │       │   └── document/
+│   │   │       ├── compliance/  # Security & compliance
+│   │   │       │   ├── audit/
+│   │   │       │   └── report/
+│   │   │       ├── integrations/ # Enterprise integrations
+│   │   │       │   └── [id]/
+│   │   │       │       └── sync/
+│   │   │       ├── mobile/      # Mobile app API
+│   │   │       │   ├── device/
+│   │   │       │   └── sync/
+│   │   │       ├── tenant/      # Multi-tenant management
+│   │   │       │   ├── route.ts
+│   │   │       │   └── sso/
+│   │   │       ├── white-label/ # White-label customization
+│   │   │       │   ├── branding/
+│   │   │       │   └── domain/
+│   │   │       └── workflows/   # Workflow automation
+│   │   │           ├── route.ts
+│   │   │           └── [id]/
+│   │   │               └── run/
 │   │   ├── auth/                # Auth pages
-│   │   │   ├── login/
-│   │   │   │   └── page.tsx
-│   │   │   └── register/
-│   │   │       └── page.tsx
 │   │   ├── dashboard/           # Dashboard page
-│   │   │   └── page.tsx
 │   │   ├── downloads/           # File downloads
-│   │   │   └── [key]/
-│   │   │       └── route.ts
 │   │   ├── tools/              # Tool pages
-│   │   │   └── [tool]/
-│   │   │       └── page.tsx
 │   │   ├── globals.css         # Global styles
 │   │   ├── layout.tsx          # Root layout
 │   │   ├── loading.tsx         # Loading state
@@ -58,21 +86,49 @@ dittopdf/
 │   │   ├── auth-form.tsx      # Login/Register form
 │   │   ├── navigation.tsx     # Navigation bar
 │   │   └── tool-upload-form.tsx # File upload form
-│   ├── lib/                   # Utility libraries
-│   │   ├── dashboard.ts       # Dashboard logic
-│   │   ├── pdf-tools.ts      # PDF processing functions
-│   │   ├── prisma.ts         # Prisma client
-│   │   ├── rate-limit.ts     # Rate limiting
-│   │   ├── request.ts        # Request utilities
-│   │   ├── session.ts        # JWT session handling
-│   │   ├── storage.ts        # File storage (S3/Cloudinary/Local)
-│   │   └── tools.ts         # Tool definitions
-│   └── middleware.ts         # Next.js middleware
+│   └── lib/                   # Utility libraries
+│       ├── ai/                # AI services (Phase 3)
+│       │   ├── classification.ts  # Document classification
+│       │   └── openai.ts      # OpenAI GPT-4 integration
+│       ├── analytics/         # Business intelligence (Phase 3)
+│       │   └── bi.ts          # Analytics service
+│       ├── billing/           # Subscription management (Phase 3)
+│       │   └── stripe.ts      # Stripe integration
+│       ├── compliance/        # Security & compliance (Phase 3)
+│       │   └── audit.ts       # Audit & compliance service
+│       ├── integrations/      # Enterprise integrations (Phase 3)
+│       │   └── enterprise.ts  # Integration manager
+│       ├── mobile/            # Mobile services (Phase 3)
+│       │   └── service.ts     # Mobile backend service
+│       ├── tenant/            # Multi-tenant & white-label (Phase 3)
+│       │   ├── sso.ts         # SSO configuration
+│       │   └── white-label.ts # White-label service
+│       ├── workflow/          # Automation engine (Phase 3)
+│       │   └── engine.ts      # Workflow execution engine
+│       ├── api-keys.ts        # API key management
+│       ├── batch.ts           # Batch processing
+│       ├── collaboration.ts   # Real-time collaboration
+│       ├── dashboard.ts       # Dashboard logic
+│       ├── ocr.ts             # OCR processing
+│       ├── pdf-tools.ts       # PDF processing functions
+│       ├── prisma.ts          # Prisma client
+│       ├── rate-limit.ts      # Rate limiting
+│       ├── request.ts         # Request utilities
+│       ├── session.ts         # JWT session handling
+│       ├── signatures.ts      # E-signature handling
+│       ├── storage.ts         # File storage
+│       ├── swagger.ts         # API documentation
+│       └── tools.ts          # Tool definitions
 ├── .env.example              # Environment variables template
 ├── .gitignore               # Git ignore rules
-├── API.md                   # API documentation
+├── API.md                   # API v1 & v2 documentation
+├── API_V3.md                # API v3 documentation (Phase 3)
+├── CHECKLIST.md             # Implementation checklist
+├── FEATURES.md              # Feature documentation
+├── IMPLEMENTATION_SUMMARY.md # Phase 1 & 2 summary
 ├── next.config.mjs          # Next.js configuration
 ├── package.json             # Dependencies
+├── PHASE3.md                # Phase 3 implementation summary
 ├── postcss.config.js        # PostCSS configuration
 ├── PROJECT_STRUCTURE.md     # This file
 ├── README.md               # Main documentation
@@ -81,177 +137,127 @@ dittopdf/
 └── tsconfig.json           # TypeScript configuration
 ```
 
-## Key Components
+## Phase 3 Key Components
 
-### Frontend Components
+### AI Services (`lib/ai/`)
 
-- **Navigation** (`components/navigation.tsx`)
-  - User authentication state
-  - Login/Logout functionality
-  - Mobile responsive menu
+- **openai.ts**: GPT-4 integration for document analysis, summarization, entity extraction, Q&A
+- **classification.ts**: TensorFlow.js-based document classification with 18+ categories
 
-- **AuthForm** (`components/auth-form.tsx`)
-  - Login and registration
-  - Form validation
-  - Success/error feedback
+### Workflow Engine (`lib/workflow/`)
 
-- **ToolUploadForm** (`components/tool-upload-form.tsx`)
-  - File upload interface
-  - Progress indicator
-  - Download link display
+- **engine.ts**: Complete workflow automation with nodes, edges, triggers, and execution
 
-- **AdSlot** (`components/ad-slot.tsx`)
-  - Google AdSense integration
-  - Position-based slots
+### Enterprise Services (`lib/tenant/`)
 
-### Backend Libraries
+- **white-label.ts**: Tenant branding, custom domains, email templates
+- **sso.ts**: SAML 2.0 and OAuth 2.0 SSO configuration
 
-- **PDF Processing** (`lib/pdf-tools.ts`)
-  - All 16 PDF tool implementations
-  - Server-side processing with pdf-lib
+### Billing (`lib/billing/`)
 
-- **Storage** (`lib/storage.ts`)
-  - Multi-provider support (Local, AWS S3, Cloudinary)
-  - Automatic file cleanup
-  - File type handling
+- **stripe.ts**: Complete Stripe integration with subscriptions, usage metering, invoicing
 
-- **Session** (`lib/session.ts`)
-  - JWT token generation/verification
-  - User authentication
+### Compliance (`lib/compliance/`)
 
-- **Rate Limiting** (`lib/rate-limit.ts`)
-  - In-memory rate limiting
-  - Per-IP tracking
+- **audit.ts**: SOC 2, GDPR, HIPAA compliance framework with audit logging
 
-### API Routes
+### Integrations (`lib/integrations/`)
 
-- **Authentication** (`/api/auth/*`)
-  - User registration/login
-  - Session management
-  - Token verification
+- **enterprise.ts**: Salesforce, SharePoint, Google Workspace, Teams, Slack integrations
 
-- **Tools** (`/api/tools/[tool]`)
-  - PDF processing endpoints
-  - File upload handling
-  - Usage tracking
+### Analytics (`lib/analytics/`)
 
-- **Dashboard** (`/api/dashboard/*`)
-  - Statistics aggregation
-  - User data retrieval
+- **bi.ts**: Business intelligence, predictive analytics, executive dashboards
 
-- **Files** (`/api/files/*`)
-  - File upload/download
-  - History tracking
+### Mobile (`lib/mobile/`)
 
-### Pages
+- **service.ts**: Device registration, push notifications, offline sync
 
-- **Home** (`app/page.tsx`)
-  - Tool grid display
-  - Feature highlights
+## Database Tables (Phase 3)
 
-- **Dashboard** (`app/dashboard/page.tsx`)
-  - Usage statistics
-  - Recent files
-  - Account settings
+### AI & Automation
+- AiJobs, AiModels, AiTrainingData
+- Workflows, WorkflowRuns, WorkflowTemplates
 
-- **Tool Pages** (`app/tools/[tool]/page.tsx`)
-  - Individual tool interface
-  - Instructions and help
+### Multi-Tenant
+- Tenants, TenantRoles, UserTenantRoles
+- CustomDomains
 
-- **Auth Pages** (`app/auth/login/page.tsx`, `app/auth/register/page.tsx`)
-  - Authentication forms
+### Compliance
+- ComplianceLogs, AuditLogs, UserSessions
 
-## Database Schema
+### Mobile
+- MobileDevices
 
-### Users Table
-```prisma
-- id (String, @id, @default(cuid()))
-- email (String, @unique)
-- passwordHash (String)
-- createdAt (DateTime, @default(now()))
-- updatedAt (DateTime, @updatedAt)
-- usageCount (Int, @default(0))
-- lastResetDate (DateTime, @default(now()))
-- planType (String, @default("Free"))
-- files (Files[])
-- usageLogs (UsageLogs[])
+### Billing
+- Subscriptions, Invoices, BillingMeters, TenantBillingSettings
+
+### Analytics
+- AnalyticsEvents, AnalyticsDashboards
+
+### Integrations
+- TenantIntegrations, IntegrationSyncLogs
+
+### Enhanced Document Management
+- Documents, DocumentVersions, DocumentShares, DocumentLibraries
+
+### Notifications
+- Notifications, ApiWebhooks, WebhookDeliveries
+
+## API Structure
+
+### v1 - Core
+- `/api/auth/*` - Authentication
+- `/api/tools/*` - PDF processing
+- `/api/files/*` - File management
+- `/api/dashboard/*` - User dashboard
+
+### v2 - Enhanced
+- `/api/v2/ocr/*` - OCR processing
+- `/api/v2/batch/*` - Batch processing
+- `/api/v2/signatures/*` - E-signatures
+- `/api/v2/editor/*` - PDF editing
+
+### v3 - AI & Enterprise
+- `/api/v3/ai/*` - AI analysis
+- `/api/v3/classify/*` - Document classification
+- `/api/v3/workflows/*` - Workflow automation
+- `/api/v3/tenant/*` - Tenant management
+- `/api/v3/compliance/*` - Compliance
+- `/api/v3/mobile/*` - Mobile API
+- `/api/v3/integrations/*` - Enterprise integrations
+- `/api/v3/billing/*` - Subscription management
+- `/api/v3/bi/*` - Business intelligence
+- `/api/v3/white-label/*` - White-label customization
+
+## Configuration
+
+### Environment Variables
+
+See `.env.example` for complete configuration including:
+- Core: DATABASE_URL, JWT_SECRET
+- AI: OPENAI_API_KEY
+- Payments: STRIPE_* 
+- SSO: SAML_CERT, OAuth credentials
+- Mobile: FCM_SERVER_KEY, APN_*
+- Integrations: Provider credentials
+
+## Development
+
+### Web
+```bash
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run prisma:migrate  # Run database migrations
 ```
 
-### Files Table
-```prisma
-- id (String, @id, @default(cuid()))
-- userId (String)
-- originalFilename (String)
-- processedFilename (String)
-- fileSize (Int)
-- toolUsed (String)
-- status (String, @default("processed"))
-- createdAt (DateTime, @default(now()))
-- user (Users @relation)
+### Mobile
+```bash
+npm run mobile:ios       # Run iOS app
+npm run mobile:android   # Run Android app
 ```
 
-### UsageLogs Table
-```prisma
-- id (String, @id, @default(cuid()))
-- userId (String)
-- toolUsed (String)
-- fileSize (Int)
-- timestamp (DateTime, @default(now()))
-- user (Users @relation)
+### AI
+```bash
+npm run ai:train         # Train classification models
 ```
-
-## Configuration Files
-
-### Tailwind Config (`tailwind.config.ts`)
-- Custom color scheme (surface, panel, accent)
-- Responsive breakpoints
-- Content paths
-
-### TypeScript Config (`tsconfig.json`)
-- Path aliases (@/*)
-- Strict mode enabled
-- Target ES2020
-
-### Next.js Config (`next.config.mjs`)
-- React Strict Mode
-- Server Actions configuration
-
-### Prisma Schema (`prisma/schema.prisma`)
-- PostgreSQL provider
-- Database models
-- Relations
-
-## Environment Variables
-
-### Required
-- `DATABASE_URL` - PostgreSQL connection
-- `JWT_SECRET` - Token signing secret
-
-### Optional
-- `AWS_ACCESS_KEY_ID` - AWS credentials
-- `AWS_SECRET_ACCESS_KEY` - AWS secret
-- `AWS_REGION` - AWS region
-- `AWS_S3_BUCKET` - S3 bucket
-- `CLOUDINARY_CLOUD_NAME` - Cloudinary name
-- `CLOUDINARY_API_KEY` - Cloudinary key
-- `CLOUDINARY_API_SECRET` - Cloudinary secret
-- `NEXT_PUBLIC_ADSENSE_CLIENT_ID` - AdSense ID
-- `NEXT_PUBLIC_SITE_URL` - Site URL
-
-## Development Workflow
-
-1. Make code changes
-2. Test with `npm run dev`
-3. Lint with `npm run lint`
-4. Build with `npm run build`
-5. Deploy to production
-
-## Security Features
-
-- JWT-based authentication
-- Password hashing with bcrypt
-- Rate limiting on all endpoints
-- File type/size validation
-- Protected routes via middleware
-- Automatic file cleanup
-- Secure cookie handling
