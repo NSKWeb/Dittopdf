@@ -6,11 +6,20 @@ import { Document, Paragraph, TextRun, Packer } from "docx";
 import * as pako from "pako";
 import JSZip from "jszip";
 import { PDFProcessingError } from "./errors";
+import Tesseract from "tesseract.js";
 
 export type ProcessedResult = {
   buffer: Buffer;
   contentType: string;
   filename: string;
+};
+
+const PAGE_SIZES: Record<string, [number, number]> = {
+  a4: [595.28, 841.89],
+  letter: [612, 792],
+  legal: [612, 1008],
+  tabloid: [792, 1224],
+  executive: [522, 756]
 };
 
 export async function processPdfTool({
@@ -81,24 +90,15 @@ export async function processPdfTool({
       };
     }
     case "pdf-to-office": {
-      const format = resolveOfficeExtension(instructions);
-      if (format === 'docx') {
-        const docxBuffer = await convertPdfToDocx(fileBuffers[0]);
-        return {
-          buffer: docxBuffer,
-          contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          filename: "converted.docx"
-        };
-      }
-      const text = await extractTextFromPdf(fileBuffers[0]);
+      const docxBuffer = await convertPdfToDocx(fileBuffers[0]);
       return {
-        buffer: Buffer.from(text, 'utf-8'),
-        contentType: "text/plain",
-        filename: `converted.${format === 'xlsx' ? 'csv' : 'txt'}`
+        buffer: docxBuffer,
+        contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        filename: "converted.docx"
       };
     }
     case "pdf-to-images": {
-      const format = instructions?.includes('png') ? 'png' : 'jpeg';
+      const format = instructions?.toLowerCase().includes('png') ? 'png' : 'jpeg';
       const zipBuffer = await convertPdfToImages(fileBuffers[0], format);
       return {
         buffer: zipBuffer,
@@ -132,27 +132,6 @@ export async function processPdfTool({
         buffer: Buffer.from(text, 'utf-8'),
         contentType: "text/plain",
         filename: "extracted-text.txt"
-      };
-    }
-    case "protect": {
-      const doc = await PDFDocument.load(fileBuffers[0]);
-      const password = parseInstructionValue(instructions) ?? "secured";
-      doc.setSubject(`Protected with password hint: ${password}`);
-      const protectedBytes = await doc.save();
-      return {
-        buffer: Buffer.from(protectedBytes),
-        contentType: "application/pdf",
-        filename: "protected.pdf"
-      };
-    }
-    case "unlock": {
-      const doc = await PDFDocument.load(fileBuffers[0]);
-      doc.setSubject("Unlocked for editing");
-      const unlockedBytes = await doc.save();
-      return {
-        buffer: Buffer.from(unlockedBytes),
-        contentType: "application/pdf",
-        filename: "unlocked.pdf"
       };
     }
     case "watermark-text": {
@@ -258,6 +237,9 @@ export async function processPdfTool({
           remainingIndices.push(i);
         }
       }
+      if (remainingIndices.length === 0) {
+        throw new PDFProcessingError("Cannot delete all pages", "INVALID_OPERATION");
+      }
       const updated = await PDFDocument.create();
       const pages = await updated.copyPages(doc, remainingIndices);
       pages.forEach((page) => updated.addPage(page));
@@ -268,32 +250,108 @@ export async function processPdfTool({
         filename: "pages-deleted.pdf"
       };
     }
-    case "pdf-a": {
+    case "page-numbers": {
       const doc = await PDFDocument.load(fileBuffers[0]);
-      doc.setSubject("PDF/A-1b compliant");
-      const pdfABytes = await doc.save();
+      await addPageNumbers(doc, instructions);
+      const resultBytes = await doc.save();
       return {
-        buffer: Buffer.from(pdfABytes),
+        buffer: Buffer.from(resultBytes),
         contentType: "application/pdf",
-        filename: "export-pdf-a.pdf"
+        filename: "with-page-numbers.pdf"
       };
     }
-    case "pdf-x": {
-      const doc = await PDFDocument.load(fileBuffers[0]);
-      doc.setSubject("PDF/X-1a compliant");
-      const pdfXBytes = await doc.save();
+    case "ocr": {
+      const ocrText = await performOCR(fileBuffers[0], instructions);
       return {
-        buffer: Buffer.from(pdfXBytes),
+        buffer: Buffer.from(ocrText, 'utf-8'),
+        contentType: "text/plain",
+        filename: "ocr-result.txt"
+      };
+    }
+    case "compare": {
+      if (files.length < 2) {
+        throw new PDFProcessingError("Please upload two PDFs to compare", "MISSING_SECOND_FILE");
+      }
+      const diffReport = await comparePdfs(fileBuffers[0], fileBuffers[1]);
+      return {
+        buffer: Buffer.from(diffReport, 'utf-8'),
+        contentType: "text/plain",
+        filename: "comparison-report.txt"
+      };
+    }
+    case "redact": {
+      const doc = await PDFDocument.load(fileBuffers[0]);
+      await redactAreas(doc, instructions);
+      const redactedBytes = await doc.save();
+      return {
+        buffer: Buffer.from(redactedBytes),
         contentType: "application/pdf",
-        filename: "export-pdf-x.pdf"
+        filename: "redacted.pdf"
+      };
+    }
+    case "flatten": {
+      const doc = await PDFDocument.load(fileBuffers[0]);
+      doc.getPages().forEach((page) => {
+        page.node.delete(PDFName.of("Annots"));
+      });
+      const flattenedBytes = await doc.save();
+      return {
+        buffer: Buffer.from(flattenedBytes),
+        contentType: "application/pdf",
+        filename: "flattened.pdf"
+      };
+    }
+    case "n-up": {
+      const doc = await PDFDocument.load(fileBuffers[0]);
+      const nValue = parseNUpValue(instructions);
+      const nUpDoc = await createNUpPdf(doc, nValue);
+      const nUpBytes = await nUpDoc.save();
+      return {
+        buffer: Buffer.from(nUpBytes),
+        contentType: "application/pdf",
+        filename: `${nValue}-up.pdf`
+      };
+    }
+    case "resize": {
+      const doc = await PDFDocument.load(fileBuffers[0]);
+      const sizeName = parseResizeSize(instructions);
+      const newSize = PAGE_SIZES[sizeName] || PAGE_SIZES.a4;
+      await resizePdfPages(doc, newSize);
+      const resizedBytes = await doc.save();
+      return {
+        buffer: Buffer.from(resizedBytes),
+        contentType: "application/pdf",
+        filename: `resized-${sizeName}.pdf`
+      };
+    }
+    case "booklet": {
+      const doc = await PDFDocument.load(fileBuffers[0]);
+      const bookletDoc = await createBooklet(doc);
+      const bookletBytes = await bookletDoc.save();
+      return {
+        buffer: Buffer.from(bookletBytes),
+        contentType: "application/pdf",
+        filename: "booklet.pdf"
+      };
+    }
+    case "repair": {
+      const repairedBytes = await repairPdf(fileBuffers[0]);
+      return {
+        buffer: Buffer.from(repairedBytes),
+        contentType: "application/pdf",
+        filename: "repaired.pdf"
+      };
+    }
+    case "pdf-to-html": {
+      const html = await convertPdfToHtml(fileBuffers[0]);
+      return {
+        buffer: Buffer.from(html, 'utf-8'),
+        contentType: "text/html",
+        filename: "output.html"
       };
     }
     default: {
-      return {
-        buffer: fileBuffers[0],
-        contentType: primaryFile.type || "application/pdf",
-        filename: `${tool}-output-${primaryFile.name}`
-      };
+      throw new PDFProcessingError(`Unknown tool: ${tool}`, "UNKNOWN_TOOL");
     }
   }
 }
@@ -301,7 +359,10 @@ export async function processPdfTool({
 async function extractTextFromPdf(buffer: Buffer): Promise<string> {
   try {
     const data = await pdfParse(buffer);
-    return data.text || 'No text content found in PDF';
+    if (!data.text || data.text.trim().length === 0) {
+      return 'No text content found in PDF. The PDF may be scanned or image-based. Try using OCR.';
+    }
+    return data.text;
   } catch (error) {
     throw new PDFProcessingError(
       `Failed to extract text: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -313,6 +374,10 @@ async function extractTextFromPdf(buffer: Buffer): Promise<string> {
 async function convertPdfToDocx(pdfBuffer: Buffer): Promise<Buffer> {
   const text = await extractTextFromPdf(pdfBuffer);
   const paragraphs = text.split('\n').filter(line => line.trim());
+  
+  if (paragraphs.length === 0) {
+    throw new PDFProcessingError("No text content to convert to DOCX", "NO_CONTENT");
+  }
   
   const doc = new Document({
     sections: [{
@@ -328,30 +393,49 @@ async function convertPdfToDocx(pdfBuffer: Buffer): Promise<Buffer> {
 
 async function convertPdfToImages(buffer: Buffer, format: 'png' | 'jpeg'): Promise<Buffer> {
   const zip = new JSZip();
-  const convert = fromBuffer(buffer, {
-    density: 150,
-    format,
-    width: 1240,
-    height: 1754,
-    savePath: '/tmp'
-  });
   
-  const data = await pdfParse(buffer);
-  const pageCount = data.numpages;
-  
-  if (pageCount > 50) {
-    throw new PDFProcessingError("PDF has too many pages for image conversion (max 50)", "PAGE_LIMIT_EXCEEDED");
-  }
-  
-  const images = await convert.bulk(pageCount);
-  
-  images.forEach((img, idx) => {
-    if (img.base64) {
-      zip.file(`page-${idx + 1}.${format}`, img.base64, { base64: true });
+  try {
+    const data = await pdfParse(buffer);
+    const pageCount = data.numpages;
+    
+    if (pageCount > 50) {
+      throw new PDFProcessingError("PDF has too many pages for image conversion (max 50)", "PAGE_LIMIT_EXCEEDED");
     }
-  });
-  
-  return zip.generateAsync({ type: 'nodebuffer' });
+    
+    if (pageCount === 0) {
+      throw new PDFProcessingError("PDF has no pages", "INVALID_PDF");
+    }
+    
+    const convert = fromBuffer(buffer, {
+      density: 150,
+      format,
+      width: 1240,
+      height: 1754,
+      savePath: '/tmp'
+    });
+    
+    const images = await convert.bulk(pageCount);
+    
+    let hasImages = false;
+    images.forEach((img, idx) => {
+      if (img.base64) {
+        zip.file(`page-${idx + 1}.${format}`, img.base64, { base64: true });
+        hasImages = true;
+      }
+    });
+    
+    if (!hasImages) {
+      throw new PDFProcessingError("Failed to convert PDF pages to images", "CONVERSION_FAILED");
+    }
+    
+    return zip.generateAsync({ type: 'nodebuffer' });
+  } catch (error) {
+    if (error instanceof PDFProcessingError) throw error;
+    throw new PDFProcessingError(
+      `Image conversion failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      "IMAGE_CONVERSION_FAILED"
+    );
+  }
 }
 
 async function extractImagesFromPdf(buffer: Buffer): Promise<Buffer> {
@@ -403,6 +487,348 @@ async function extractImagesFromPdf(buffer: Buffer): Promise<Buffer> {
   }
   
   return zip.generateAsync({ type: 'nodebuffer' });
+}
+
+async function performOCR(buffer: Buffer, instructions?: string | null): Promise<string> {
+  try {
+    const format = instructions?.toLowerCase().includes('png') ? 'png' : 'jpeg';
+    const convert = fromBuffer(buffer, {
+      density: 300,
+      format,
+      width: 2480,
+      height: 3508,
+      savePath: '/tmp'
+    });
+    
+    const data = await pdfParse(buffer);
+    const pageCount = data.numpages;
+    
+    if (pageCount > 20) {
+      throw new PDFProcessingError("PDF has too many pages for OCR (max 20)", "PAGE_LIMIT_EXCEEDED");
+    }
+    
+    const images = await convert.bulk(pageCount);
+    let fullText = "";
+    
+    for (let i = 0; i < images.length; i++) {
+      const img = images[i];
+      if (img.base64) {
+        const result = await Tesseract.recognize(`data:image/${format};base64,${img.base64}`, 'eng', {
+          logger: () => {}
+        });
+        fullText += `\n--- Page ${i + 1} ---\n${result.data.text}\n`;
+      }
+    }
+    
+    if (!fullText.trim()) {
+      throw new PDFProcessingError("OCR failed to extract any text from the PDF", "OCR_FAILED");
+    }
+    
+    return fullText;
+  } catch (error) {
+    if (error instanceof PDFProcessingError) throw error;
+    throw new PDFProcessingError(
+      `OCR failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      "OCR_FAILED"
+    );
+  }
+}
+
+async function addPageNumbers(doc: PDFDocument, instructions?: string | null) {
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const totalPages = doc.getPageCount();
+  const position = instructions?.toLowerCase().includes('bottom') ? 'bottom' : 'top';
+  const format = instructions?.toLowerCase().includes('roman') ? 'roman' : 'arabic';
+  
+  doc.getPages().forEach((page, index) => {
+    const { width, height } = page.getSize();
+    const pageNum = format === 'roman' ? toRoman(index + 1) : String(index + 1);
+    const text = `${pageNum} / ${format === 'roman' ? toRoman(totalPages) : totalPages}`;
+    const textWidth = font.widthOfTextAtSize(text, 10);
+    
+    const y = position === 'bottom' ? 20 : height - 30;
+    const x = width - textWidth - 20;
+    
+    page.drawText(text, {
+      x,
+      y,
+      size: 10,
+      font,
+      color: rgb(0, 0, 0)
+    });
+  });
+}
+
+function toRoman(num: number): string {
+  const romanNumerals = [
+    ['M', 1000], ['CM', 900], ['D', 500], ['CD', 400],
+    ['C', 100], ['XC', 90], ['L', 50], ['XL', 40],
+    ['X', 10], ['IX', 9], ['V', 5], ['IV', 4], ['I', 1]
+  ];
+  let result = '';
+  for (const [letter, value] of romanNumerals) {
+    while (num >= value) {
+      result += letter;
+      num -= value;
+    }
+  }
+  return result || 'i';
+}
+
+async function comparePdfs(pdf1Buffer: Buffer, pdf2Buffer: Buffer): Promise<string> {
+  const text1 = await extractTextFromPdf(pdf1Buffer);
+  const text2 = await extractTextFromPdf(pdf2Buffer);
+  
+  const lines1 = text1.split('\n').filter(l => l.trim());
+  const lines2 = text2.split('\n').filter(l => l.trim());
+  
+  let report = "PDF Comparison Report\n";
+  report += "======================\n\n";
+  report += `PDF 1: ${lines1.length} lines of text\n`;
+  report += `PDF 2: ${lines2.length} lines of text\n\n`;
+  
+  const maxLen = Math.max(lines1.length, lines2.length);
+  let differences = 0;
+  
+  for (let i = 0; i < maxLen; i++) {
+    const line1 = lines1[i] || '';
+    const line2 = lines2[i] || '';
+    if (line1 !== line2) {
+      differences++;
+    }
+  }
+  
+  if (differences === 0 && lines1.length === lines2.length) {
+    report += "Result: PDFs are identical\n";
+  } else {
+    report += `Result: Found ${differences} differences\n\n`;
+    report += "First 10 differences:\n";
+    let shown = 0;
+    for (let i = 0; i < maxLen && shown < 10; i++) {
+      const line1 = lines1[i] || '(empty)';
+      const line2 = lines2[i] || '(empty)';
+      if (line1 !== line2) {
+        report += `\nLine ${i + 1}:\n  PDF 1: ${line1.substring(0, 80)}\n  PDF 2: ${line2.substring(0, 80)}\n`;
+        shown++;
+      }
+    }
+  }
+  
+  return report;
+}
+
+async function redactAreas(doc: PDFDocument, instructions?: string | null) {
+  const font = await doc.embedFont(StandardFonts.HelveticaBold);
+  const redactions = parseRedactionAreas(instructions, doc.getPageCount());
+  
+  doc.getPages().forEach((page, pageIndex) => {
+    const pageRedactions = redactions.filter(r => r.page === pageIndex + 1);
+    const { width, height } = page.getSize();
+    
+    for (const redact of pageRedactions) {
+      page.drawRectangle({
+        x: redact.x * width,
+        y: height - (redact.y * height) - (redact.height * height),
+        width: redact.width * width,
+        height: redact.height * height,
+        color: rgb(0, 0, 0)
+      });
+    }
+  });
+}
+
+function parseRedactionAreas(instructions?: string | null, pageCount?: number) {
+  const areas: Array<{page: number; x: number; y: number; width: number; height: number}> = [];
+  
+  if (!instructions) {
+    return areas;
+  }
+  
+  const parts = instructions.split(/[,;]/);
+  for (const part of parts) {
+    const match = part.trim().match(/(\d+):([\d.]+),([\d.]+),([\d.]+),([\d.]+)/);
+    if (match) {
+      const page = parseInt(match[1], 10);
+      if (page >= 1 && page <= (pageCount || 999)) {
+        areas.push({
+          page,
+          x: parseFloat(match[2]),
+          y: parseFloat(match[3]),
+          width: parseFloat(match[4]),
+          height: parseFloat(match[5])
+        });
+      }
+    }
+  }
+  
+  return areas;
+}
+
+async function createNUpPdf(doc: PDFDocument, n: number): Promise<PDFDocument> {
+  const nUpDoc = await PDFDocument.create();
+  const pages = doc.getPageIndices();
+  const nUpPages: number[][] = [];
+  
+  for (let i = 0; i < pages.length; i += n) {
+    nUpPages.push(pages.slice(i, i + n));
+  }
+  
+  const cols = n === 4 ? 2 : 2;
+  const rows = n === 4 ? 2 : 1;
+  const pageWidth = 612;
+  const pageHeight = 792;
+  const margin = 36;
+  const cellWidth = (pageWidth - margin * 2) / cols;
+  const cellHeight = (pageHeight - margin * 2) / rows;
+  
+  for (const group of nUpPages) {
+    const nUpPage = nUpDoc.addPage([pageWidth, pageHeight]);
+    
+    for (let i = 0; i < group.length; i++) {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const [sourcePage] = await nUpDoc.copyPages(doc, [group[i]]);
+      
+      if (sourcePage) {
+        const { width, height } = sourcePage.getSize();
+        const scale = Math.min(cellWidth / width, cellHeight / height) * 0.9;
+        const scaledWidth = width * scale;
+        const scaledHeight = height * scale;
+        
+        const x = margin + col * cellWidth + (cellWidth - scaledWidth) / 2;
+        const y = pageHeight - margin - (row + 1) * cellHeight + (cellHeight - scaledHeight) / 2;
+        
+        nUpPage.drawPage(sourcePage, {
+          x,
+          y,
+          width: scaledWidth,
+          height: scaledHeight
+        });
+      }
+    }
+  }
+  
+  return nUpDoc;
+}
+
+function parseNUpValue(instructions?: string | null): number {
+  if (instructions?.includes('4')) return 4;
+  return 2;
+}
+
+async function resizePdfPages(doc: PDFDocument, newSize: [number, number]) {
+  const [targetWidth, targetHeight] = newSize;
+  
+  for (const page of doc.getPages()) {
+    const { width, height } = page.getSize();
+    const scaleX = targetWidth / width;
+    const scaleY = targetHeight / height;
+    const scale = Math.min(scaleX, scaleY);
+    
+    page.setWidth(targetWidth);
+    page.setHeight(targetHeight);
+    
+    const contentWidth = width * scale;
+    const contentHeight = height * scale;
+    const x = (targetWidth - contentWidth) / 2;
+    const y = (targetHeight - contentHeight) / 2;
+    
+    page.translateContent(x - page.getX(), y - page.getY());
+  }
+}
+
+function parseResizeSize(instructions?: string | null): string {
+  const normalized = instructions?.toLowerCase() || '';
+  if (normalized.includes('letter')) return 'letter';
+  if (normalized.includes('legal')) return 'legal';
+  if (normalized.includes('tabloid')) return 'tabloid';
+  if (normalized.includes('executive')) return 'executive';
+  return 'a4';
+}
+
+async function createBooklet(doc: PDFDocument): Promise<PDFDocument> {
+  const bookletDoc = await PDFDocument.create();
+  const pageCount = doc.getPageCount();
+  const sheetCount = Math.ceil(pageCount / 4);
+  
+  for (let sheet = 0; sheet < sheetCount; sheet++) {
+    const frontSheet: number[] = [];
+    const backSheet: number[] = [];
+    
+    const frontPageIndex = sheet * 4;
+    const backPageIndex = (sheet + 1) * 4 - 1;
+    
+    if (frontPageIndex < pageCount) {
+      frontSheet.push(frontPageIndex);
+    }
+    if (frontPageIndex + 1 < pageCount) {
+      backSheet.push(frontPageIndex + 1);
+    }
+    if (backPageIndex >= 0 && backPageIndex < pageCount) {
+      backSheet.push(backPageIndex);
+    }
+    if (backPageIndex - 1 >= 0 && backPageIndex - 1 < pageCount) {
+      backSheet.push(backPageIndex - 1);
+    }
+    
+    const frontPages = await bookletDoc.copyPages(doc, frontSheet);
+    frontPages.forEach(page => bookletDoc.addPage(page));
+    
+    const backPages = await bookletDoc.copyPages(doc, backSheet);
+    backPages.forEach(page => bookletDoc.addPage(page));
+  }
+  
+  return bookletDoc;
+}
+
+async function repairPdf(buffer: Buffer): Promise<Buffer> {
+  try {
+    const doc = await PDFDocument.load(buffer, { ignoreEncryption: true });
+    const repairedBytes = await doc.save();
+    return Buffer.from(repairedBytes);
+  } catch (error) {
+    throw new PDFProcessingError(
+      `Failed to repair PDF: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      "REPAIR_FAILED"
+    );
+  }
+}
+
+async function convertPdfToHtml(buffer: Buffer): Promise<string> {
+  const data = await pdfParse(buffer);
+  const text = data.text || '';
+  const pageCount = data.numpages;
+  
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>PDF to HTML</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+    .page { border: 1px solid #ccc; padding: 20px; margin-bottom: 20px; }
+    .page-number { color: #666; text-align: center; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>PDF Content</h1>
+  <p>Total Pages: ${pageCount}</p>
+  <div class="content">
+    ${text.split('\n').map(line => `<p>${escapeHtml(line)}</p>`).join('\n')}
+  </div>
+</body>
+</html>`;
+  
+  return html;
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 function parsePageIndices(instructions?: string | null, pageCount: number) {
