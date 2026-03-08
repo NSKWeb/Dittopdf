@@ -7,34 +7,49 @@ const toolCategories = [
       { name: "Merge PDFs", slug: "merge", description: "Combine multiple PDFs into one" },
       { name: "Split PDF", slug: "split", description: "Extract pages or ranges" },
       { name: "Compress PDF", slug: "compress", description: "Reduce file size" },
-      { name: "Rotate PDF", slug: "rotate", description: "Rotate pages by 90°/180°/270°" }
+      { name: "Rotate PDF", slug: "rotate", description: "Rotate pages by 90°/180°/270°" },
+      { name: "Extract Pages", slug: "extract-pages", description: "Pull specific pages" },
+      { name: "Delete Pages", slug: "delete-pages", description: "Remove specific pages" },
+      { name: "Reorder Pages", slug: "reorder", description: "Change page order" }
     ]
   },
   {
-    name: "Conversion Tools",
+    name: "Convert Tools",
     tools: [
-      { name: "PDF to Office", slug: "pdf-to-office", description: "Convert to Word, Excel, PowerPoint" },
+      { name: "PDF to Text", slug: "pdf-to-text", description: "Extract text from PDF" },
       { name: "PDF to Images", slug: "pdf-to-images", description: "Export as JPG or PNG" },
       { name: "Images to PDF", slug: "images-to-pdf", description: "Convert JPG/PNG to PDF" },
-      { name: "PDF to Text", slug: "pdf-to-text", description: "Extract text from PDF" }
+      { name: "PDF to DOCX", slug: "pdf-to-office", description: "Convert to Word document" },
+      { name: "PDF to HTML", slug: "pdf-to-html", description: "Convert to HTML" },
+      { name: "OCR PDF", slug: "ocr", description: "Extract text from scanned PDFs" }
     ]
   },
   {
-    name: "Security Tools",
+    name: "Edit Tools",
     tools: [
-      { name: "Password Protect", slug: "protect", description: "Encrypt with password" },
-      { name: "Remove Password", slug: "unlock", description: "Remove password protection" },
       { name: "Text Watermark", slug: "watermark-text", description: "Add text watermark" },
-      { name: "Image Watermark", slug: "watermark-image", description: "Add image/logo watermark" }
+      { name: "Image Watermark", slug: "watermark-image", description: "Add image/logo watermark" },
+      { name: "Text Annotations", slug: "annotate", description: "Add notes and highlights" },
+      { name: "Add Page Numbers", slug: "page-numbers", description: "Number all pages" },
+      { name: "Edit Metadata", slug: "metadata", description: "Edit title, author, subject" }
+    ]
+  },
+  {
+    name: "Security/Privacy",
+    tools: [
+      { name: "Redact PDF", slug: "redact", description: "Black out sensitive areas" }
     ]
   },
   {
     name: "Advanced Tools",
     tools: [
-      { name: "Text Annotations", slug: "annotate", description: "Add notes and highlights" },
-      { name: "Extract Pages", slug: "extract-pages", description: "Pull specific pages" },
-      { name: "Extract Images", slug: "extract-images", description: "Download embedded images" },
-      { name: "Edit Metadata", slug: "metadata", description: "Edit title, author, subject" }
+      { name: "Compare PDFs", slug: "compare", description: "Compare two PDFs" },
+      { name: "Flatten PDF", slug: "flatten", description: "Remove interactivity" },
+      { name: "N-up PDF", slug: "n-up", description: "2 or 4 pages per sheet" },
+      { name: "Resize PDF", slug: "resize", description: "Change page size" },
+      { name: "Booklet", slug: "booklet", description: "Reorder for booklet printing" },
+      { name: "Repair PDF", slug: "repair", description: "Fix corrupted PDFs" },
+      { name: "Extract Images", slug: "extract-images", description: "Get embedded images" }
     ]
   }
 ];
@@ -49,15 +64,15 @@ export default function HomePage() {
               All-in-one PDF suite for modern teams
             </h1>
             <p className="text-slate-300 max-w-2xl text-lg">
-              Convert, compress, protect, and manage your documents in one secure workspace. 
-              Dittopdf Phase 1 MVP includes 16 production-ready tools, cloud storage, and detailed analytics.
+              Convert, compress, edit, and manage your documents in one secure workspace. 
+              All 24 PDF tools are production-ready and free to use.
             </p>
             <div className="flex flex-wrap gap-3">
               <div className="flex items-center gap-2 text-sm text-green-400">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                16 PDF Tools
+                24 PDF Tools
               </div>
               <div className="flex items-center gap-2 text-sm text-green-400">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
