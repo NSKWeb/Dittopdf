@@ -1,5 +1,11 @@
-import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
+import { PDFDocument, PDFRawStream, PDFName, StandardFonts, degrees, rgb } from "pdf-lib";
 import type { PDFImage } from "pdf-lib";
+import pdfParse from "pdf-parse";
+import { fromBuffer } from "pdf2pic";
+import { Document, Paragraph, TextRun, Packer } from "docx";
+import * as pako from "pako";
+import JSZip from "jszip";
+import { PDFProcessingError } from "./errors";
 
 export type ProcessedResult = {
   buffer: Buffer;
@@ -18,7 +24,7 @@ export async function processPdfTool({
 }): Promise<ProcessedResult> {
   const primaryFile = files[0];
   if (!primaryFile) {
-    throw new Error("No files uploaded");
+    throw new PDFProcessingError("No files uploaded", "NO_FILES");
   }
 
   const fileBuffers = await Promise.all(files.map(async (file) => Buffer.from(await file.arrayBuffer())));
@@ -75,22 +81,29 @@ export async function processPdfTool({
       };
     }
     case "pdf-to-office": {
-      const doc = await PDFDocument.load(fileBuffers[0]);
-      const extension = resolveOfficeExtension(instructions);
-      const summary = buildTextSummary(doc, instructions, "Office conversion");
+      const format = resolveOfficeExtension(instructions);
+      if (format === 'docx') {
+        const docxBuffer = await convertPdfToDocx(fileBuffers[0]);
+        return {
+          buffer: docxBuffer,
+          contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          filename: "converted.docx"
+        };
+      }
+      const text = await extractTextFromPdf(fileBuffers[0]);
       return {
-        buffer: Buffer.from(summary),
+        buffer: Buffer.from(text, 'utf-8'),
         contentType: "text/plain",
-        filename: `converted.${extension}`
+        filename: `converted.${format === 'xlsx' ? 'csv' : 'txt'}`
       };
     }
     case "pdf-to-images": {
-      const doc = await PDFDocument.load(fileBuffers[0]);
-      const summary = buildTextSummary(doc, instructions, "Image export");
+      const format = instructions?.includes('png') ? 'png' : 'jpeg';
+      const zipBuffer = await convertPdfToImages(fileBuffers[0], format);
       return {
-        buffer: Buffer.from(summary),
-        contentType: "text/plain",
-        filename: "pdf-pages.txt"
+        buffer: zipBuffer,
+        contentType: "application/zip",
+        filename: `pdf-pages.zip`
       };
     }
     case "images-to-pdf": {
@@ -99,7 +112,7 @@ export async function processPdfTool({
         const file = files[i];
         const buffer = fileBuffers[i];
         if (!file.type.startsWith("image/")) {
-          throw new Error("Images to PDF only supports image uploads");
+          throw new PDFProcessingError("Images to PDF only supports image uploads", "INVALID_FILE_TYPE");
         }
         const image = file.type === "image/png" ? await pdf.embedPng(buffer) : await pdf.embedJpg(buffer);
         const { width, height } = image.scale(1);
@@ -114,10 +127,9 @@ export async function processPdfTool({
       };
     }
     case "pdf-to-text": {
-      const doc = await PDFDocument.load(fileBuffers[0]);
-      const summary = buildTextSummary(doc, instructions, "Text extraction");
+      const text = await extractTextFromPdf(fileBuffers[0]);
       return {
-        buffer: Buffer.from(summary),
+        buffer: Buffer.from(text, 'utf-8'),
         contentType: "text/plain",
         filename: "extracted-text.txt"
       };
@@ -158,10 +170,10 @@ export async function processPdfTool({
       const doc = await PDFDocument.load(fileBuffers[0]);
       const imageFile = files[1];
       if (!imageFile) {
-        throw new Error("Upload a second image file to use as a watermark");
+        throw new PDFProcessingError("Upload a second image file to use as a watermark", "MISSING_WATERMARK_IMAGE");
       }
       if (!imageFile.type.startsWith("image/")) {
-        throw new Error("Watermark image must be a PNG or JPG file");
+        throw new PDFProcessingError("Watermark image must be a PNG or JPG file", "INVALID_WATERMARK_TYPE");
       }
       const imageBuffer = fileBuffers[1];
       const image = imageFile.type === "image/png" ? await doc.embedPng(imageBuffer) : await doc.embedJpg(imageBuffer);
@@ -198,12 +210,11 @@ export async function processPdfTool({
       };
     }
     case "extract-images": {
-      const doc = await PDFDocument.load(fileBuffers[0]);
-      const summary = buildTextSummary(doc, instructions, "Image extraction");
+      const images = await extractImagesFromPdf(fileBuffers[0]);
       return {
-        buffer: Buffer.from(summary),
-        contentType: "text/plain",
-        filename: "extracted-images.txt"
+        buffer: images,
+        contentType: "application/zip",
+        filename: "extracted-images.zip"
       };
     }
     case "metadata": {
@@ -258,7 +269,6 @@ export async function processPdfTool({
       };
     }
     case "pdf-a": {
-      // Mocking PDF/A export as it requires specific metadata and profiles
       const doc = await PDFDocument.load(fileBuffers[0]);
       doc.setSubject("PDF/A-1b compliant");
       const pdfABytes = await doc.save();
@@ -269,7 +279,6 @@ export async function processPdfTool({
       };
     }
     case "pdf-x": {
-      // Mocking PDF/X export
       const doc = await PDFDocument.load(fileBuffers[0]);
       doc.setSubject("PDF/X-1a compliant");
       const pdfXBytes = await doc.save();
@@ -287,6 +296,113 @@ export async function processPdfTool({
       };
     }
   }
+}
+
+async function extractTextFromPdf(buffer: Buffer): Promise<string> {
+  try {
+    const data = await pdfParse(buffer);
+    return data.text || 'No text content found in PDF';
+  } catch (error) {
+    throw new PDFProcessingError(
+      `Failed to extract text: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      "TEXT_EXTRACTION_FAILED"
+    );
+  }
+}
+
+async function convertPdfToDocx(pdfBuffer: Buffer): Promise<Buffer> {
+  const text = await extractTextFromPdf(pdfBuffer);
+  const paragraphs = text.split('\n').filter(line => line.trim());
+  
+  const doc = new Document({
+    sections: [{
+      properties: {},
+      children: paragraphs.map(p => new Paragraph({
+        children: [new TextRun({ text: p })]
+      }))
+    }]
+  });
+  
+  return Packer.toBuffer(doc);
+}
+
+async function convertPdfToImages(buffer: Buffer, format: 'png' | 'jpeg'): Promise<Buffer> {
+  const zip = new JSZip();
+  const convert = fromBuffer(buffer, {
+    density: 150,
+    format,
+    width: 1240,
+    height: 1754,
+    savePath: '/tmp'
+  });
+  
+  const data = await pdfParse(buffer);
+  const pageCount = data.numpages;
+  
+  if (pageCount > 50) {
+    throw new PDFProcessingError("PDF has too many pages for image conversion (max 50)", "PAGE_LIMIT_EXCEEDED");
+  }
+  
+  const images = await convert.bulk(pageCount);
+  
+  images.forEach((img, idx) => {
+    if (img.base64) {
+      zip.file(`page-${idx + 1}.${format}`, img.base64, { base64: true });
+    }
+  });
+  
+  return zip.generateAsync({ type: 'nodebuffer' });
+}
+
+async function extractImagesFromPdf(buffer: Buffer): Promise<Buffer> {
+  const doc = await PDFDocument.load(buffer);
+  const zip = new JSZip();
+  let imageCount = 0;
+  
+  const enumeratedIndirectObjects = doc.context.enumerateIndirectObjects();
+  
+  for (let i = 0; i < enumeratedIndirectObjects.length; i++) {
+    const [, obj] = enumeratedIndirectObjects[i];
+    
+    if (obj instanceof PDFRawStream) {
+      const { lookup } = obj.dict;
+      const subtype = lookup(PDFName.of('Subtype'));
+      
+      if (subtype === PDFName.of('Image')) {
+        const width = lookup(PDFName.of('Width'))?.asNumber() || 0;
+        const height = lookup(PDFName.of('Height'))?.asNumber() || 0;
+        
+        if (width > 0 && height > 0) {
+          const filter = lookup(PDFName.of('Filter'));
+          let extension = 'bin';
+          let imageBuffer: Buffer;
+          
+          if (filter === PDFName.of('DCTDecode')) {
+            extension = 'jpg';
+            imageBuffer = Buffer.from(obj.contents);
+          } else if (filter === PDFName.of('FlateDecode')) {
+            extension = 'png';
+            try {
+              const decompressed = pako.inflate(obj.contents);
+              imageBuffer = Buffer.from(decompressed);
+            } catch {
+              continue;
+            }
+          } else {
+            continue;
+          }
+          
+          zip.file(`image-${++imageCount}.${extension}`, imageBuffer);
+        }
+      }
+    }
+  }
+  
+  if (imageCount === 0) {
+    zip.file('info.txt', 'No embedded images found in this PDF');
+  }
+  
+  return zip.generateAsync({ type: 'nodebuffer' });
 }
 
 function parsePageIndices(instructions?: string | null, pageCount: number) {
@@ -363,24 +479,6 @@ function resolveOfficeExtension(instructions?: string | null) {
     return "pptx";
   }
   return "docx";
-}
-
-function buildTextSummary(doc: PDFDocument, instructions: string | null | undefined, label: string) {
-  const title = doc.getTitle() ?? "Untitled";
-  const author = doc.getAuthor() ?? "Unknown";
-  const subject = doc.getSubject() ?? "Unspecified";
-  const parts = [
-    `${label} summary`,
-    `Title: ${title}`,
-    `Author: ${author}`,
-    `Subject: ${subject}`,
-    `Pages: ${doc.getPageCount()}`
-  ];
-  if (instructions) {
-    parts.push(`Instructions: ${instructions}`);
-  }
-  parts.push("Output generated by Dittopdf MVP.");
-  return parts.join("\n");
 }
 
 async function applyTextWatermark(doc: PDFDocument, text: string) {

@@ -19,3 +19,9 @@ export function rateLimit(key: string, limit: number, windowMs: number) {
   store.set(key, entry);
   return { allowed: true, remaining: limit - entry.count };
 }
+
+export function rateLimitWithRequest(request: Request, limit: number, windowMs: number) {
+  const forwarded = request.headers.get("x-forwarded-for");
+  const ip = forwarded ? forwarded.split(",")[0]?.trim() : "anonymous";
+  return rateLimit(ip, limit, windowMs);
+}

@@ -3,6 +3,7 @@ import Script from "next/script";
 import Link from "next/link";
 import { AdSlot } from "@/components/ad-slot";
 import { Navigation } from "@/components/navigation";
+import { ErrorBoundary } from "@/components/error-boundary";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -51,7 +52,9 @@ export default function RootLayout({
               <AdSlot position="header" />
             </div>
           </div>
-          <main className="flex-1">{children}</main>
+          <main className="flex-1">
+            <ErrorBoundary>{children}</ErrorBoundary>
+          </main>
           <footer className="px-4 sm:px-6 py-8 border-t border-slate-800 text-xs text-slate-400">
             <div className="max-w-7xl mx-auto">
               <div className="grid gap-6 md:grid-cols-3">
